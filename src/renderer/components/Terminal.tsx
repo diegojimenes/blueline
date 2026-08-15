@@ -1,85 +1,192 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { Terminal as XTerm } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import "@xterm/xterm/css/xterm.css";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { NAV_MARKER, initialTtyLine, navLineCommand, ttyStep, type TtyLineState } from "../../core";
 import { useStore } from "../store";
 
+const PROMPT = "codeatlas » ";
+
+interface PtyOutputEvent {
+  data: string;
+}
+
+/**
+ * Terminal real (M4, specs/08-terminal.md).
+ *
+ * Duas superfícies no mesmo xterm.js: PTY do shell (backend Rust) + comandos
+ * determinísticos do CodeAtlas (barramento de eventos). A classificação do
+ * input é pura (`core/tty`) e testável sem terminal.
+ */
 export function Terminal() {
-  const log = useStore((s) => s.log);
-  const dispatch = useStore((s) => s.dispatch);
-  const gotoId = useStore((s) => s.gotoId);
-  const [input, setInput] = useState("");
-  const bodyRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const termRef = useRef<XTerm | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
+  const lineStateRef = useRef<TtyLineState>(initialTtyLine());
+  const ptyIdRef = useRef<number | null>(null);
+  const unlistensRef = useRef<UnlistenFn[]>([]);
+
+  const execCommand = useStore((s) => s.execCommand);
 
   useEffect(() => {
-    const el = bodyRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [log]);
+    const container = containerRef.current;
+    if (!container) return;
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    const term = new XTerm({
+      convertEol: true,
+      fontSize: 12,
+      cursorBlink: true,
+      theme: {
+        background: "#0d0f13",
+        foreground: "#c9d1d9",
+        cursor: "#e6edf3",
+      },
+    });
+    termRef.current = term;
+    const fit = new FitAddon();
+    fitRef.current = fit;
+    term.loadAddon(fit);
+    term.open(container);
+    fit.fit();
 
-  useEffect(() => {
-    const onFocus = () => inputRef.current?.focus();
-    window.addEventListener("codeatlas:terminal-focus", onFocus);
-    return () => window.removeEventListener("codeatlas:terminal-focus", onFocus);
-  }, []);
+    const ro = new ResizeObserver(() => {
+      fit.fit();
+      const cols = term.cols;
+      const rows = term.rows;
+      if (ptyIdRef.current != null) {
+        invoke("ptty_resize", { id: ptyIdRef.current, cols, rows }).catch(() => {});
+      }
+    });
+    ro.observe(container);
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const value = input.trim();
-    if (!value) return;
-    dispatch(value);
-    setInput("");
-  };
+    const writeOut = (data: string) => term.write(data);
+
+    if (!isTauri()) {
+      // Browser (`pnpm dev`): sem backend, shell demo apenas ecoa o input.
+      term.writeln("CodeAtlas — modo browser (demo). PTY real: pnpm tauri dev.");
+      term.write(PROMPT);
+    } else {
+      const cwd = useStore.getState().projectPath ?? "/";
+      invoke<number>("ptty_spawn", { cwd })
+        .then((id) => {
+          ptyIdRef.current = id;
+          listen<PtyOutputEvent>("codeatlas:pty-output", (e) => writeOut(e.payload.data)).then((u) =>
+            unlistensRef.current.push(u),
+          );
+          listen("codeatlas:pty-exit", () => {
+            term.writeln("\r\n[shell encerrado — aperte Enter para um novo prompt]");
+          }).then((u) => unlistensRef.current.push(u));
+        })
+        .catch((err) => {
+          term.writeln(`falha ao spawnar PTY: ${err}`);
+          term.write(PROMPT);
+        });
+    }
+
+    const handleCommand = (input: string) => {
+      if (input === "clear") {
+        term.clear();
+        term.write(PROMPT);
+        return;
+      }
+      term.writeln(`\r\n\x1b[36m${PROMPT.trim()}\x1b[0m ${input}`);
+      const result = execCommand(input);
+      for (const line of result.lines) {
+        term.writeln(line);
+      }
+      if (result.target) {
+        const last = result.entries[result.entries.length - 1];
+        const path = last?.humanPath ?? input;
+        term.writeln(`\x1b[36m${NAV_MARKER}\x1b[0m ${input}  (${path})`);
+      }
+      term.write(PROMPT);
+    };
+
+    term.onData((data) => {
+      const { state, actions } = ttyStep(lineStateRef.current, data);
+      lineStateRef.current = state;
+      for (const a of actions) {
+        switch (a.kind) {
+          case "pty":
+            if (ptyIdRef.current != null) {
+              invoke("ptty_write", { id: ptyIdRef.current, data: a.data }).catch(() => {});
+            } else {
+              demoShell(term, a.data);
+            }
+            break;
+          case "ui":
+            term.write(a.text);
+            break;
+          case "command":
+            handleCommand(a.input);
+            break;
+          case "clear":
+            term.clear();
+            break;
+        }
+      }
+    });
+
+    // Histórico clicável (specs/08): clicar numa linha `› <comando>` re-executa.
+    term.registerLinkProvider({
+      provideLinks(bufferLineNumber, callback) {
+        const buffer = term.buffer.active;
+        const line = buffer.getLine(bufferLineNumber);
+        if (line) {
+          const text = line.translateToString(true);
+          if (navLineCommand(text) !== null) {
+            const range = {
+              start: { x: 0, y: bufferLineNumber },
+              end: { x: line.length, y: bufferLineNumber },
+            };
+            callback([
+              {
+                range,
+                text,
+                activate: () => {
+                  const command = navLineCommand(text);
+                  if (command) handleCommand(command);
+                },
+              },
+            ]);
+            return;
+          }
+        }
+        callback(undefined);
+      },
+    });
+
+    return () => {
+      ro.disconnect();
+      for (const u of unlistensRef.current) u();
+      unlistensRef.current = [];
+      if (ptyIdRef.current != null) {
+        invoke("ptty_kill", { id: ptyIdRef.current }).catch(() => {});
+      }
+      term.dispose();
+      termRef.current = null;
+    };
+  }, [execCommand]);
 
   return (
     <section className="panel panel-terminal" aria-label="Terminal">
       <div className="panel-title">
         <span>Terminal</span>
-        <span className="terminal-hint">goto · up · ls · lens · help · clear</span>
+        <span className="terminal-hint">shell + comandos: goto · up · ls · lens · clear · help</span>
       </div>
-      <div className="terminal-body" ref={bodyRef}>
-        {log.length === 0 ? (
-          <p className="terminal-placeholder">
-            $ Terminal real chega no M4 (PTY). Por ora, comandos determinísticos: duplo clique no grafo ou digite
-            abaixo — ex.: <code>goto gateway.Gateway</code>
-          </p>
-        ) : (
-          <ul className="terminal-log">
-            {log.map((line) => {
-              const isEcho = line.text.startsWith("$ ");
-              return line.target ? (
-                <li key={line.id}>
-                  <button
-                    type="button"
-                    className={`log-line log-line-clickable${isEcho ? " log-echo" : " log-ok"}`}
-                    onClick={() => gotoId(line.target!)}
-                    title="voltar a este ponto"
-                  >
-                    {line.text}
-                  </button>
-                </li>
-              ) : (
-                <li key={line.id}>
-                  <span className={`log-line${isEcho ? " log-echo" : ""}`}>{line.text}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <form className="terminal-input" onSubmit={onSubmit}>
-          <span className="prompt">$</span>
-          <input
-            ref={inputRef}
-            aria-label="Comando CodeAtlas"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="goto pedidos.PedidoService"
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </form>
-      </div>
+      <div className="panel-body xterm-wrap" ref={containerRef} />
     </section>
   );
+}
+
+/** Shell de demonstração (browser): ecoa o input e avisa que não há PTY. */
+function demoShell(term: XTerm, data: string) {
+  if (data === "\r") {
+    term.write("\r\n[shell demo: PTY real disponível em pnpm tauri dev]\r\n");
+    term.write(PROMPT);
+  } else {
+    term.write(data);
+  }
 }

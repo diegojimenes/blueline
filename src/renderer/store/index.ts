@@ -50,6 +50,8 @@ interface AppState extends NavigationState {
   setSelected: (selected: NodeId | null) => void;
   setLayout: (layout: LayoutMap | null) => void;
   loadDemo: () => void;
+  /** Executa um comando determinístico e devolve o resultado (terminal real). */
+  execCommand: (command: string) => CommandResult;
   /** Executa um comando do terminal (`goto`, `up`, `ls`, `lens`, `help`, `clear`). */
   dispatch: (command: string) => void;
   /** Entra no nó (duplo clique no canvas) — mesmo caminho de histórico do `goto`. */
@@ -124,31 +126,45 @@ export const useStore = create<AppState>()((set, get) => {
     setSelected: (selected) => set({ selected }),
     setLayout: (layout) => set({ layout }),
 
-    loadDemo: () =>
-      set({
-        graph: demoGraph,
-        config: demoConfig,
-        projectOpen: true,
-        projectPath: demoGraph.projectRoot,
-        ...initialNavigation,
-        history: [],
-        historyIndex: 0,
-        log: [],
-      }),
+  loadDemo: () =>
+    set({
+      graph: demoGraph,
+      config: demoConfig,
+      projectOpen: true,
+      projectPath: demoGraph.projectRoot,
+      ...initialNavigation,
+      history: [],
+      historyIndex: 0,
+      log: [],
+    }),
 
-    dispatch: (command) => {
-      const s = get();
-      const trimmed = command.trim();
-      if (trimmed === "clear") {
-        set({ log: [] });
-        return;
-      }
-      if (!s.graph) {
-        apply({ nav: s, entries: [], lines: ["nenhum projeto carregado (demo via duplo clique)"], target: null }, trimmed);
-        return;
-      }
-      apply(runCommand(s.graph, s, trimmed, { config: s.config }), trimmed);
-    },
+  /** Executa um comando determinístico e devolve o resultado completo (terminal real usa isto). */
+  execCommand: (command) => {
+    const s = get();
+    const trimmed = command.trim();
+    if (trimmed === "clear") {
+      const result: CommandResult = { nav: s, entries: [], lines: [], target: null };
+      set({ log: [] });
+      return result;
+    }
+    if (!s.graph) {
+      const result: CommandResult = {
+        nav: s,
+        entries: [],
+        lines: ["nenhum projeto carregado (demo via duplo clique)"],
+        target: null,
+      };
+      apply(result, trimmed);
+      return result;
+    }
+    const result = runCommand(s.graph, s, trimmed, { config: s.config });
+    apply(result, trimmed);
+    return result;
+  },
+
+  dispatch: (command) => {
+    get().execCommand(command);
+  },
 
     enterNode: (id) => {
       const s = get();

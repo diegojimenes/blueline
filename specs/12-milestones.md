@@ -61,10 +61,24 @@
 - **Done:** navegar por Explorer/grafo/terminal produz o mesmo estado; lente Camadas recolore sem mover nós;
   87 testes verdes; núcleo cobre ~94% (stmts/lines); `pnpm typecheck`/`lint`/`test:coverage` verdes.
 
-## M4 — Terminal real
+## M4 — Terminal real ✅
 - `portable-pty` (Rust) + xterm.js; `ptty_spawn/write/resize`; modos shell vs comando; histórico clicável;
   `clear`/`help`; abas do terminal (mínimo uma).
-- **Done:** usuário roda `claude`/`aider`/`git` no terminal; `ls` e `goto` funcionam; log de navegação clicável.
+- Implementado:
+  - Backend: `src-tauri/src/ptys.rs` com `portable-pty` (spawn de `$SHELL` com cwd do projeto, decodificação
+    UTF-8 incremental na thread de leitura, eventos `codeatlas:pty-output`/`codeatlas:pty-exit`), registry
+    de TTYs e comandos `ptty_spawn`/`ptty_write`/`ptty_resize`/`ptty_kill`; testes de unidade em Rust
+    (echo, UTF-8 multibyte, encerramento).
+  - Frontend: xterm.js (v6) + `@xterm/addon-fit` no painel Terminal; `core/tty.ts` puro decide tecla a tecla
+    se o input é comando CodeAtlas (verbos reservados `goto|up|ls|lens|clear|help`) ou vai ao PTY — sem eco
+    duplicado (o buffer é liberado ao shell quando deixa de ser prefixo de verbo); modo browser cai num
+    shell demo (sem Tauri); histórico de navegação clicável via link provider nas linhas `› <comando>`.
+  - Store: `execCommand` devolve o `CommandResult` completo (terminal real reusa o pipeline do dispatch).
+- **Done:** shell real roda `git`/`claude`/`aider`; `goto`/`ls`/`up`/`lens` determinísticos na mesma
+  superfície; log de navegação clicável; `cargo test` + 107 testes vitest + typecheck/lint verdes.
+
+> Nota: `clear` limpa a tela do xterm (não apaga histórico de navegação); abas do terminal ficam no backlog
+> (uma superfície por janela no MVP).
 
 ## M5 — Live updates (MVP completo)
 - Watcher (notify) + debounce; batch `files:changed`; re-parse incremental; `git` provider (D7); delta push;

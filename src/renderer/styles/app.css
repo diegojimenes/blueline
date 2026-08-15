@@ -349,11 +349,17 @@
 .panel-terminal {
   grid-area: terminal;
   border-top: 1px solid var(--border);
-  background: #181a1f;
+  background: #0d0f13;
 }
 
-:root[data-theme="light"] .panel-terminal {
-  background: #f0f2f4;
+.xterm-wrap {
+  padding: 4px 8px;
+  overflow: hidden;
+  background: #0d0f13;
+}
+
+.xterm-wrap .xterm {
+  height: 100%;
 }
 
 .placeholder {

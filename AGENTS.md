@@ -48,7 +48,10 @@ Nome de trabalho: **CodeAtlas**.
 > **M3 concluído** (layout IDE: Explorer em árvore, Inspector com código + camada/domínio/acoplamento, lentes
 > Camadas/Acoplamento/Domínio recolorem sem mover nós via `core/lenses.ts`, atalhos `l`/`/`/`Alt+←/→`,
 > `demoConfig`; 87 testes) — ver `specs/12-milestones.md`.
-> Próximo: M4 (terminal real via PTY/xterm.js).
+> **M4 concluído** (terminal real: `portable-pty` no backend + xterm.js; `core/tty.ts` decide comando vs shell
+> sem eco duplicado; histórico de navegação clicável; fallback demo no browser; 107 testes) — ver
+> `specs/12-milestones.md`.
+> Próximo: M5 (live updates: watcher + git diff).
 
 ## Checklist ao trabalhar aqui
 

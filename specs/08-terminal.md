@@ -56,3 +56,8 @@ xterm.js (webview) ◀──IPC──▶ PTY (Rust) ◀──stdin/stdout──�
 - `core/commands` coberto por vitest: tabela de casos (valores válidos, inválidos, caminhos ambíguos).
 - Backend: teste de unidade de `ptys.rs` (spawn shell, echo de input/output, encerramento limpo).
 - Componente terminal: renderização xterm mockada, assert de log de navegação.
+
+> **Implementado no M4:** a desambiguação tecla a tecla vive em `src/core/tty.ts` (pura). Enquanto o buffer é
+> prefixo de um verbo reservado, a linha fica em "decisão" sem eco; se deixa de ser, o buffer é liberado ao
+> PTY (o shell ecoa — sem duplicar). Linhas de navegação são impressas como `› <comando>  (<caminho>)` e
+> clicáveis via link provider do xterm. No browser (`pnpm dev`, sem Tauri) cai num shell demo que apenas ecoa.
