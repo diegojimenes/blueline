@@ -14,6 +14,7 @@ export default function App() {
   const projectPath = useStore((s) => s.projectPath);
   const graph = useStore((s) => s.graph);
   const loadDemo = useStore((s) => s.loadDemo);
+  const openProjectDialog = useStore((s) => s.openProjectDialog);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -39,6 +40,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
+        {isTauri() && (
+          <button type="button" className="btn-open" onClick={() => void openProjectDialog()}>
+            Abrir
+          </button>
+        )}
         <span className="app-title">CodeAtlas</span>
         {projectPath && <span className="app-project">{projectPath}</span>}
         <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label="Alternar tema">

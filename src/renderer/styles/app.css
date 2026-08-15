@@ -28,6 +28,22 @@
   letter-spacing: 0.02em;
 }
 
+.btn-open {
+  color: var(--text);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.btn-open:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
 .app-project {
   color: var(--text-muted);
   font-family: var(--font-mono);

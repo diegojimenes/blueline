@@ -56,6 +56,9 @@ const { fakeParser } = vi.hoisted(() => {
 
 vi.mock("../parser", () => ({ getParser: () => Promise.resolve(fakeParser) }));
 
+const { openDialogMock } = vi.hoisted(() => ({ openDialogMock: vi.fn() }));
+vi.mock("@tauri-apps/plugin-dialog", () => ({ open: openDialogMock }));
+
 import { useStore } from "./index";
 
 describe("store · live updates (M5)", () => {
@@ -132,5 +135,12 @@ describe("store · live updates (M5)", () => {
     useStore.getState().execCommand("open /proj");
     await vi.waitFor(() => expect(useStore.getState().projectPath).toBe("/proj"));
     expect(useStore.getState().log.some((l) => l.text.includes("abrindo /proj"))).toBe(true);
+  });
+
+  it("openProjectDialog: seleciona pasta pelo botão Abrir e abre o projeto", async () => {
+    openDialogMock.mockResolvedValue("/proj");
+    await useStore.getState().openProjectDialog();
+    expect(openDialogMock).toHaveBeenCalledWith({ directory: true, multiple: false, title: "Abrir projeto" });
+    expect(useStore.getState().projectPath).toBe("/proj");
   });
 });

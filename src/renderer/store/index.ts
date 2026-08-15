@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   applyFileRemovals,
   applyFiles,
@@ -77,6 +78,8 @@ interface AppState extends NavigationState {
   loadDemo: () => void;
   /** Abre um diretório real: walk + parse inicial + watcher (M5). */
   openProject: (path: string) => Promise<void>;
+  /** Seletor de pasta (botão "Abrir" no header) → `openProject`. */
+  openProjectDialog: () => Promise<void>;
   /** Re-parse incremental de um batch de arquivos tocados pelo watcher (M5). */
   applyExternalChanges: (paths: string[]) => Promise<void>;
   startWatcher: () => Promise<void>;
@@ -200,6 +203,18 @@ export const useStore = create<AppState>()((set, get) => {
       log: [...get().log, { id: nextLogId++, text: `projeto aberto: ${path} (${inputs.length} arquivos)`, target: null }],
     });
     void get().startWatcher();
+  },
+
+  openProjectDialog: async () => {
+    if (!isTauri()) {
+      get().focusTerminal();
+      get().execCommand("open");
+      return;
+    }
+    const selected = await openDialog({ directory: true, multiple: false, title: "Abrir projeto" });
+    if (typeof selected === "string") {
+      await get().openProject(selected);
+    }
   },
 
   applyExternalChanges: async (paths) => {
