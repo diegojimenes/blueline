@@ -2,15 +2,11 @@ import type { CodeGraph, Edge, EdgeId, EdgeType, Node, NodeId, ProjectConfig } f
 import { moduleOfPath } from "./analyze/build";
 
 /** Formato canônico de saída do CodeGraph (specs/04-analysis-pipeline.md). */
-export interface SerializedNode {
-  id: NodeId;
-  kind: Node["kind"];
-  name: string;
-  file?: string;
-  path?: string;
-  startLine?: number;
-  owner?: NodeId;
-}
+export type SerializedNode =
+  | { id: NodeId; kind: "project"; name: string }
+  | { id: NodeId; kind: "module"; name: string; path: string }
+  | { id: NodeId; kind: "class"; name: string; file: string; startLine: number }
+  | { id: NodeId; kind: "method"; name: string; file: string; startLine: number; owner: NodeId };
 
 export interface SerializedEdge {
   id: EdgeId;
@@ -29,16 +25,22 @@ export interface SerializedGraph {
 }
 
 export function serializeNode(node: Node): SerializedNode {
-  const base = { id: node.id, kind: node.kind, name: node.name };
   switch (node.kind) {
     case "project":
-      return base;
+      return { id: node.id, kind: "project", name: node.name };
     case "module":
-      return { ...base, path: node.path };
+      return { id: node.id, kind: "module", name: node.name, path: node.path };
     case "class":
-      return { ...base, file: node.file, startLine: node.startLine };
+      return { id: node.id, kind: "class", name: node.name, file: node.file, startLine: node.startLine };
     case "method":
-      return { ...base, file: node.file, startLine: node.startLine, owner: node.owner };
+      return {
+        id: node.id,
+        kind: "method",
+        name: node.name,
+        file: node.file,
+        startLine: node.startLine,
+        owner: node.owner,
+      };
   }
 }
 

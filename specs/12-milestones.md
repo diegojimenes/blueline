@@ -25,10 +25,24 @@
 - `.js`/`.jsx` são parseados com as gramáticas TS/TSX (superset); gramática JS separada fica para backlog.
 - Módulo = diretório relativo após remover prefixos de raiz (`src`/`lib`/`app`).
 
-## M2 — Grafo & zoom semântico
+## M2 — Grafo & zoom semântico ✅
 - `layout.ts` por nível; renderer canvas com culling; duplo clique entra; `up` sai; portais; trail/visited.
 - `core/commands` (goto/up/ls) com testes de tabela.
-- **Done:** navegação 1→4 via canvas e via comando idêntica (mesmo histórico); testado com `basic/`.
+- Implementado:
+  - `core/navigation.ts` (`visibleNodes`, `navigationToNode`, `upNavigation`, `ancestorChain`, `canonicalPathOf`),
+    `core/commands.ts` (`goto` com `modulo.Classe.metodo` + nome único + id, `up`, `ls`, `lens`, `help`, `clear`),
+    `core/layout.ts` (grid módulos/classes, coluna métodos), `core/viewport.ts` (culling puro),
+    `core/portals.ts` (nível 3 → classe dona do método externo, navegação lateral).
+  - Renderer: canvas 2D com culling, duplo clique entra (mesmo histórico do `goto`), `Esc`/`↑` sobe,
+    breadcrumb (trail) clicável, brilho de `visited`, portais tracejados na borda, terminal com input
+    determinístico e histórico clicável.
+  - Demo embutida (`pnpm demo:graph` gera `src/renderer/demo/demoGraph.ts` a partir da fixture `basic`) —
+    renderer continua browser-safe.
+- **Done:** navegação 1→4 via canvas e via comando idêntica (mesmo histórico, testado em
+  `commands.test.ts` + `store/index.test.ts`); 70 testes verdes; `pnpm typecheck`/`lint`/`test:coverage`/`build` verdes.
+
+> Nota: `goto <caminho>` segue o formato de `specs/08-terminal.md`; `lens` só troca o estado da lente no M2
+> (recolorir é do M3).
 
 ## M3 — Layout IDE completo
 - Explorer, Inspector (métricas + código-fonte), Status bar, temas; sincronização com `selected`.

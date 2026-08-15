@@ -33,7 +33,9 @@ describe("toJSON", () => {
   it("serializa corretamente os campos por tipo de nó", () => {
     const gateway = basicJson.nodes.find((n) => n.kind === "class" && n.name === "Gateway");
     expect(gateway).toMatchObject({ file: "src/gateway/Gateway.ts", startLine: 4 });
-    const start = basicJson.nodes.find((n) => n.kind === "method" && n.name === "start");
+    const start = basicJson.nodes.find(
+      (n): n is Extract<typeof n, { kind: "method" }> => n.kind === "method" && n.name === "start",
+    );
     expect(start?.owner).toContain("Gateway");
   });
 

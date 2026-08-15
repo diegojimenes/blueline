@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { BuildFileInput } from "./analyze/build";
+import { buildGraph, type BuildFileInput } from "./analyze/build";
+import { toJSON, type SerializedGraph } from "./serialize";
 import { createNodeTypeScriptParser } from "./parse/node";
 import type { Parser } from "./parse/types";
 import { walkProject } from "./walk";
@@ -23,4 +24,10 @@ export async function loadFixture(name: string): Promise<{ parser: Parser; files
     files.push({ path: rel, symbols: parser.parseFile(rel, content) });
   }
   return { parser, files };
+}
+
+/** Grafo serializado de uma fixture (formato canônico usado pela UI). */
+export async function loadSerialized(name: string): Promise<SerializedGraph> {
+  const { files } = await loadFixture(name);
+  return toJSON(buildGraph(files, fixturePath(name)).graph);
 }
