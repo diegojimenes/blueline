@@ -131,14 +131,16 @@ fn file_read(project_path: String, rel_path: String) -> Result<String, String> {
 }
 
 /// Lista e lê todos os arquivos TS/JS do projeto (build inicial).
+/// Arquivos ilegíveis são pulados (permissões/remoção em andamento).
 #[tauri::command]
 fn read_project(project_path: String) -> Result<Vec<ProjectFile>, String> {
     let root = Path::new(&project_path);
     let rels = project::walk_source_files(root);
     let mut out = Vec::with_capacity(rels.len());
     for rel in rels {
-        let content = std::fs::read_to_string(root.join(&rel)).map_err(|e| format!("{rel}: {e}"))?;
-        out.push(ProjectFile { path: rel, content });
+        if let Ok(content) = std::fs::read_to_string(root.join(&rel)) {
+            out.push(ProjectFile { path: rel, content });
+        }
     }
     Ok(out)
 }

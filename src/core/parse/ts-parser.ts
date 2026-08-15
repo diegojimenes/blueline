@@ -6,6 +6,12 @@ export interface TypeScriptParserOptions {
   tsWasm: string | Uint8Array;
   /** Caminho ou bytes da gramática TSX (tree-sitter-tsx.wasm). */
   tsxWasm: string | Uint8Array;
+  /**
+   * URL explícita do web-tree-sitter.wasm (webview). Sem isso, o init tenta
+   * localizar `tree-sitter.wasm` ao lado do bundle — falha no Vite/TAURI
+   * (recebe o HTML do fallback). Node/testes usam o autodetect padrão.
+   */
+  treeSitterWasm?: string;
 }
 
 const FILE_EXT = /\.(ts|tsx|js|jsx)$/;
@@ -20,7 +26,9 @@ let initPromise: Promise<void> | null = null;
 export async function createTypeScriptParser(
   options: TypeScriptParserOptions,
 ): Promise<Parser> {
-  initPromise ??= WebTreeSitterParser.init();
+  initPromise ??= WebTreeSitterParser.init(
+    options.treeSitterWasm ? { locateFile: () => options.treeSitterWasm! } : undefined,
+  );
   await initPromise;
   const [tsLang, tsxLang] = await Promise.all([
     Language.load(options.tsWasm),

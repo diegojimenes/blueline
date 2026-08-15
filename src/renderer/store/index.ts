@@ -182,6 +182,7 @@ export const useStore = create<AppState>()((set, get) => {
 
   openProject: async (path) => {
     const parser = await getParser();
+    get().stopWatcher();
     const files = await invoke<ProjectFile[]>("read_project", { projectPath: path });
     const inputs: BuildFileInput[] = [];
     for (const f of files) {
@@ -211,9 +212,14 @@ export const useStore = create<AppState>()((set, get) => {
       get().execCommand("open");
       return;
     }
-    const selected = await openDialog({ directory: true, multiple: false, title: "Abrir projeto" });
-    if (typeof selected === "string") {
-      await get().openProject(selected);
+    try {
+      const selected = await openDialog({ directory: true, multiple: false, title: "Abrir projeto" });
+      if (typeof selected === "string") {
+        await get().openProject(selected);
+      }
+    } catch (err) {
+      const s = get();
+      set({ log: [...s.log, { id: nextLogId++, text: `falha ao abrir: ${String(err)}`, target: null }] });
     }
   },
 
