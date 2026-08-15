@@ -16,4 +16,5 @@ export * from "./commands";
 export * from "./layout";
 export * from "./viewport";
 export * from "./portals";
+export * from "./lenses";
 export { createTypeScriptParser } from "./parse/ts-parser";

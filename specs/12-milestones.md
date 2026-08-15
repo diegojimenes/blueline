@@ -44,10 +44,22 @@
 > Nota: `goto <caminho>` segue o formato de `specs/08-terminal.md`; `lens` só troca o estado da lente no M2
 > (recolorir é do M3).
 
-## M3 — Layout IDE completo
+## M3 — Layout IDE completo ✅
 - Explorer, Inspector (métricas + código-fonte), Status bar, temas; sincronização com `selected`.
 - Lentes: Camadas (obrigatória) + Acoplamento; `codeatlas.json` (domainPaths, ignore, regras de módulo).
-- **Done:** navegar por Explorer/grafo/terminal produz o mesmo estado; lente Camadas recolore sem mover nós.
+- Implementado:
+  - `core/lenses.ts`: `layerOf`/`domainOf`/`couplingOf`/`colorKey`/`widthFor`/`groupsFor` — puro e determinístico;
+    `ProjectConfig.layerPaths` (precedência sobre as regras padrão); `demoConfig` na demo.
+  - Explorer em árvore (sistema→módulos→classes→métodos) com mesmo `gotoId` do grafo, expandir/recolher
+    local e expansão automática da trilha do nó selecionado.
+  - Canvas recolore pela lente ativa (fill/borda `colorKey`), caixas de camada (`groupsFor`, nível 1) e
+    espessura de arestas (`widthFor`) **sem mover nós** (D7).
+  - Inspector mostra camada/domínio/acoplamento; atalhos `l` (cicla lente), `/` (foca terminal),
+    `Alt+←/→` (voltar/avançar no histórico de foco); status bar já exibia `nível`/`lente`.
+  - Store: `config`, `historyIndex`, `back`/`forward` (pula entradas com alvo repetido; volta ao sistema no
+    início; navegar após voltar trunca o caminho à frente), `cycleLens`.
+- **Done:** navegar por Explorer/grafo/terminal produz o mesmo estado; lente Camadas recolore sem mover nós;
+  87 testes verdes; núcleo cobre ~94% (stmts/lines); `pnpm typecheck`/`lint`/`test:coverage` verdes.
 
 ## M4 — Terminal real
 - `portable-pty` (Rust) + xterm.js; `ptty_spawn/write/resize`; modos shell vs comando; histórico clicável;

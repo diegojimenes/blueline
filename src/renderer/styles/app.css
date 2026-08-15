@@ -84,6 +84,77 @@
   border-right: 1px solid var(--border);
 }
 
+.explorer-body {
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.tree {
+  list-style: none;
+}
+
+.tree ul {
+  list-style: none;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding-right: 6px;
+}
+
+.tree-row:hover {
+  background: var(--bg-hover);
+}
+
+.tree-row-selected {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.tree-toggle {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-toggle:hover {
+  color: var(--text);
+}
+
+.tree-toggle-empty {
+  pointer-events: none;
+}
+
+.tree-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tree-kind-module .tree-label {
+  color: var(--accent);
+}
+
+.tree-kind-class .tree-label,
+.tree-kind-method .tree-label {
+  color: var(--text-muted);
+}
+
 .panel-canvas {
   grid-area: canvas;
   background: var(--bg);
@@ -219,6 +290,20 @@
 .call-link:hover {
   background: var(--bg-hover);
   color: var(--accent);
+}
+
+.lens-hint {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.lens-hint kbd {
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 4px;
+  color: var(--text-muted);
 }
 
 .code-missing {

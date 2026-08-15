@@ -25,13 +25,18 @@ interface LensGroup {
 
 ## Lente Camadas (MVP obrigatória)
 
-- Agrupa por convenção de caminho. Regras padrão (configurável em `codeatlas.json`):
+- Agrupa por convenção de caminho. Regras padrão (configurável em `codeatlas.json` via `layerPaths`):
   - `src/api`, `src/routes`, `src/controllers` → **api**
   - `src/domain`, `src/entities`, `src/models` → **domain**
   - `src/services`, `src/use-cases` → **application**
   - `src/infra*`, `src/db`, `src/clients` → **infra**
   - demais → **core/outros**
+- `layerPaths` no config tem precedência sobre as regras padrão; a chave é a camada e o valor é a lista de prefixos:
+  ```json
+  { "layerPaths": { "api": ["gateway"], "domain": ["pedidos"] } }
+  ```
 - `groupsFor` retorna uma caixa agrupada por camada (contorno), **sem mover nós**.
+- O projeto (`PROJECT_ID`) é sempre a camada `sistema`.
 
 ## Lente Acoplamento
 

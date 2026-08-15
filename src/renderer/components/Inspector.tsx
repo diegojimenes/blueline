@@ -1,4 +1,12 @@
-import { canonicalPathOf, moduleOfPath, type SerializedNode } from "../../core";
+import {
+  canonicalPathOf,
+  couplingOf,
+  domainOf,
+  layerOf,
+  moduleOfPath,
+  type SerializedGraph,
+  type SerializedNode,
+} from "../../core";
 import { demoSources } from "../demo/demoGraph";
 import { useStore } from "../store";
 
@@ -7,6 +15,8 @@ export function Inspector() {
   const focus = useStore((s) => s.focus);
   const selected = useStore((s) => s.selected);
   const level = useStore((s) => s.level);
+  const lens = useStore((s) => s.lens);
+  const config = useStore((s) => s.config);
   const gotoId = useStore((s) => s.gotoId);
 
   const targetId = selected ?? focus;
@@ -36,7 +46,23 @@ export function Inspector() {
           <dd>{node.kind === "module" ? node.path : node.kind === "project" ? "—" : node.file}</dd>
           {node.kind === "method" || node.kind === "class" ? <><dt>linha</dt><dd>{node.startLine}</dd></> : null}
           {node.kind === "module" ? <><dt>classes</dt><dd>{classesOf(graph, node).length}</dd></> : null}
+          {node.kind !== "project" ? (
+            <>
+              <dt>camada</dt><dd>{layerOf(node, config)}</dd>
+              <dt>domínio</dt><dd>{domainOf(node, config)}</dd>
+            </>
+          ) : null}
+          {node.kind !== "project" ? (
+            <>
+              <dt>acoplamento</dt><dd>{couplingOf(graph, node)}</dd>
+            </>
+          ) : null}
         </dl>
+        {node.kind === "class" || node.kind === "module" ? (
+          <p className="lens-hint">
+            lente <strong>{lens}</strong> — aperte <kbd>l</kbd> para alternar
+          </p>
+        ) : null}
 
         {node.kind === "method" ? <CallLists node={node} onGoto={gotoId} /> : null}
 
@@ -47,10 +73,10 @@ export function Inspector() {
 }
 
 function classesOf(
-  graph: NonNullable<ReturnType<typeof useStore.getState>["graph"]>,
+  graph: SerializedGraph,
   node: Extract<SerializedNode, { kind: "module" }>,
 ): SerializedNode[] {
-  return graph.nodes.filter((n) => n.kind === "class" && moduleOfPath(n.file) === node.path);
+  return graph.nodes.filter((n) => n.kind === "class" && moduleOfPath(n.file, useStore.getState().config) === node.path);
 }
 
 function isCodeNode(node: SerializedNode): node is Extract<SerializedNode, { kind: "class" | "method" }> {

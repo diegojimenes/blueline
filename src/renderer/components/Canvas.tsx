@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef } from "react";
 import {
+  colorKey,
   cull,
+  groupsFor,
   layoutVisible,
   portalsOf,
+  visibleNodes,
+  widthFor,
   type LayoutMap,
+  type LensId,
   type NodeId,
   type Portal,
   type Rect,
   type SerializedGraph,
   type SerializedNode,
 } from "../../core";
+import { lensColor } from "../palette";
 import { useStore } from "../store";
 
 const NODE_RADIUS = 8;
@@ -34,6 +40,10 @@ export function Canvas() {
   const enterNode = useStore((s) => s.enterNode);
   const gotoId = useStore((s) => s.gotoId);
   const up = useStore((s) => s.up);
+  const back = useStore((s) => s.back);
+  const forward = useStore((s) => s.forward);
+  const cycleLens = useStore((s) => s.cycleLens);
+  const focusTerminal = useStore((s) => s.focusTerminal);
   const select = useStore((s) => s.setSelected);
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -51,7 +61,7 @@ export function Canvas() {
         return;
       }
       const { width, height } = el.getBoundingClientRect();
-      setLayout(layoutVisible(graph, { level, focus }, width, height, {}));
+      setLayout(layoutVisible(graph, { level, focus }, width, height, useStore.getState().config));
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -97,12 +107,18 @@ export function Canvas() {
 
     const visible = new Set(cull(positions, viewport));
 
-    drawEdges(ctx, s.graph, positions, s.level, visible);
+    const nodes = visibleNodes(s.graph, { level: s.level, focus: s.focus }, s.config);
+    if (s.level === 1) {
+      drawLensGroups(ctx, groupsFor(nodes, s.lens, s.config), positions, visible);
+    }
+    drawEdges(ctx, s.graph, positions, s.level, s.lens, visible);
     drawPortals(ctx, portals, visible);
     drawNodes(ctx, s.graph, positions, visible, {
       focus: s.focus,
       selected: s.selected,
       visited: s.visited,
+      lens: s.lens,
+      config: s.config,
     });
   }, []);
 
@@ -113,13 +129,27 @@ export function Canvas() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (e.key === "Escape" && !(t instanceof HTMLInputElement) && !(t instanceof HTMLTextAreaElement)) {
+      const typing =
+        t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement;
+      const alt = e.altKey;
+      if (e.key === "Escape" && !typing) {
         up();
+      } else if (alt && e.key === "ArrowLeft" && !typing) {
+        e.preventDefault();
+        back();
+      } else if (alt && e.key === "ArrowRight" && !typing) {
+        e.preventDefault();
+        forward();
+      } else if (e.key === "l" && !typing && !alt && !e.ctrlKey && !e.metaKey) {
+        cycleLens();
+      } else if (e.key === "/" && !typing && !alt && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        focusTerminal();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [up]);
+  }, [up, back, forward, cycleLens, focusTerminal]);
 
   const pointOf = (e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -209,24 +239,65 @@ function Breadcrumb() {
   );
 }
 
+function drawLensGroups(
+  ctx: CanvasRenderingContext2D,
+  groups: ReturnType<typeof groupsFor>,
+  positions: LayoutMap,
+  visible: Set<NodeId>,
+) {
+  ctx.save();
+  ctx.font = "10px var(--font-ui)";
+  for (const group of groups) {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const id of group.nodeIds) {
+      const r = positions.get(id);
+      if (!r || !visible.has(id)) continue;
+      minX = Math.min(minX, r.x);
+      minY = Math.min(minY, r.y);
+      maxX = Math.max(maxX, r.x + r.width);
+      maxY = Math.max(maxY, r.y + r.height);
+    }
+    if (minX === Infinity) continue;
+    const pad = 10;
+    const box = { x: minX - pad, y: minY - pad, width: maxX - minX + pad * 2, height: maxY - minY + pad * 2 };
+    const color = lensColor(group.id);
+    roundRect(ctx, box.x, box.y, box.width, box.height, 14);
+    ctx.fillStyle = withAlpha(color, 0.06);
+    ctx.fill();
+    ctx.strokeStyle = withAlpha(color, 0.35);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(group.label, box.x + 6, box.y + 12);
+  }
+  ctx.restore();
+}
+
 function drawEdges(
   ctx: CanvasRenderingContext2D,
   graph: SerializedGraph,
   positions: LayoutMap,
   level: number,
+  lens: LensId,
   visible: Set<NodeId>,
 ) {
   ctx.save();
   ctx.lineCap = "round";
   if (level === 1) {
-    ctx.strokeStyle = withAlpha(css("--accent-dim"), 0.55);
     for (const edge of graph.moduleEdges) {
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
-      const weight = edge.meta?.weight ?? 1;
+      ctx.strokeStyle = withAlpha(css("--accent-dim"), 0.55);
+      ctx.lineWidth = widthFor(edge, lens, graph);
       ctx.beginPath();
-      ctx.lineWidth = Math.min(1 + weight, 5);
       ctx.moveTo(from.x + from.width / 2, from.y + from.height / 2);
       ctx.lineTo(to.x + to.width / 2, to.y + to.height / 2);
       ctx.stroke();
@@ -292,7 +363,13 @@ function drawNodes(
   graph: SerializedGraph,
   positions: LayoutMap,
   visible: Set<NodeId>,
-  state: { focus: NodeId | null; selected: NodeId | null; visited: Set<NodeId> },
+  state: {
+    focus: NodeId | null;
+    selected: NodeId | null;
+    visited: Set<NodeId>;
+    lens: LensId;
+    config: Parameters<typeof colorKey>[2];
+  },
 ) {
   const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
   for (const [id, rect] of positions) {
@@ -303,6 +380,7 @@ function drawNodes(
       isFocus: id === state.focus,
       isSelected: id === state.selected,
       isVisited: state.visited.has(id),
+      color: lensColor(colorKey(node, state.lens, state.config, graph)),
     });
   }
 }
@@ -311,7 +389,7 @@ function drawNode(
   ctx: CanvasRenderingContext2D,
   node: SerializedNode,
   rect: Rect,
-  state: { isFocus: boolean; isSelected: boolean; isVisited: boolean },
+  state: { isFocus: boolean; isSelected: boolean; isVisited: boolean; color: string },
 ) {
   const kind = node.kind;
   ctx.save();
@@ -320,13 +398,12 @@ function drawNode(
     ctx.shadowBlur = 12;
   }
   roundRect(ctx, rect.x, rect.y, rect.width, rect.height, NODE_RADIUS);
-  ctx.fillStyle = css("--bg-panel");
+  ctx.fillStyle = withAlpha(state.color, 0.14);
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  const strokeColor = kind === "module" ? css("--accent") : kind === "class" ? css("--accent-dim") : css("--text-muted");
-  ctx.strokeStyle = state.isFocus ? css("--accent") : strokeColor;
-  ctx.lineWidth = state.isFocus ? 2.5 : 1.2;
+  ctx.strokeStyle = state.isFocus ? css("--accent") : state.color;
+  ctx.lineWidth = state.isFocus ? 2.5 : 1.4;
   ctx.stroke();
 
   if (state.isSelected && !state.isFocus) {

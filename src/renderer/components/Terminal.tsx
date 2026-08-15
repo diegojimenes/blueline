@@ -18,6 +18,12 @@ export function Terminal() {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const onFocus = () => inputRef.current?.focus();
+    window.addEventListener("codeatlas:terminal-focus", onFocus);
+    return () => window.removeEventListener("codeatlas:terminal-focus", onFocus);
+  }, []);
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const value = input.trim();

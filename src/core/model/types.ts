@@ -86,4 +86,6 @@ export interface ProjectConfig {
   moduleDepth?: number;
   /** Prefixos de diretório raiz ignorados ao agrupar módulos (padrão: `["src", "lib", "app"]`). */
   rootPrefixes?: string[];
+  /** Regras de camada da lente Camadas: camada → prefixos de caminho de módulo. */
+  layerPaths?: Record<string, string[]>;
 }

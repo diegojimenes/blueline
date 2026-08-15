@@ -62,4 +62,52 @@ describe("store · navegação M2", () => {
     expect(s.log.some((l) => l.text.includes("desconhecido"))).toBe(true);
     expect(s.history).toHaveLength(0);
   });
+
+  it("cycleLens alterna a lente ativa e registra no histórico", () => {
+    expect(useStore.getState().lens).toBe("layers");
+    useStore.getState().cycleLens();
+    expect(useStore.getState().lens).toBe("coupling");
+    useStore.getState().cycleLens();
+    expect(useStore.getState().lens).toBe("domain");
+    useStore.getState().cycleLens();
+    expect(useStore.getState().lens).toBe("layers");
+  });
+
+  it("back/forward percorrem o histórico de foco (Alt+← / Alt+→)", () => {
+    useStore.getState().dispatch("goto gateway");
+    useStore.getState().dispatch("goto gateway.Gateway");
+    useStore.getState().back();
+    const s = useStore.getState();
+    expect(s.focus).toBe("module:gateway");
+    expect(s.level).toBe(2);
+    useStore.getState().back();
+    expect(useStore.getState().focus).toBeNull();
+    expect(useStore.getState().level).toBe(1);
+    useStore.getState().forward();
+    expect(useStore.getState().focus).toBe("module:gateway");
+    useStore.getState().forward();
+    expect(useStore.getState().focus).toContain("class");
+  });
+
+  it("back no início do histórico sobe ao sistema e depois não faz nada", () => {
+    useStore.getState().dispatch("goto gateway");
+    useStore.getState().back();
+    expect(useStore.getState().level).toBe(1);
+    expect(useStore.getState().focus).toBeNull();
+    const before = useStore.getState();
+    useStore.getState().back();
+    expect(useStore.getState().level).toBe(1);
+    expect(useStore.getState().historyIndex).toBe(before.historyIndex);
+  });
+
+  it("navegar depois de voltar trunca o caminho à frente", () => {
+    useStore.getState().dispatch("goto gateway");
+    useStore.getState().dispatch("goto gateway.Gateway");
+    useStore.getState().back();
+    useStore.getState().dispatch("goto pedidos");
+    const s = useStore.getState();
+    expect(s.historyIndex).toBe(s.history.length);
+    useStore.getState().forward();
+    expect(useStore.getState().focus).toBe("module:pedidos");
+  });
 });

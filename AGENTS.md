@@ -45,7 +45,10 @@ Nome de trabalho: **CodeAtlas**.
 > modelo de grafo, `toJSON` canônico, goldens; 70 testes) e **M2 concluído** (grafo & zoom semântico: canvas com
 > culling, duplo clique entra / `up` sai, portais, trail/visited, `core/commands` goto/up/ls com mesmo histórico
 > via canvas ou comando; demo embutida em `src/renderer/demo/demoGraph.ts` — `pnpm demo:graph` regenera).
-> Próximo: M3 (layout IDE completo, Inspector com código, lentes) — ver `specs/12-milestones.md`.
+> **M3 concluído** (layout IDE: Explorer em árvore, Inspector com código + camada/domínio/acoplamento, lentes
+> Camadas/Acoplamento/Domínio recolorem sem mover nós via `core/lenses.ts`, atalhos `l`/`/`/`Alt+←/→`,
+> `demoConfig`; 87 testes) — ver `specs/12-milestones.md`.
+> Próximo: M4 (terminal real via PTY/xterm.js).
 
 ## Checklist ao trabalhar aqui
 
