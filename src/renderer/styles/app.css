@@ -154,6 +154,113 @@
   border-left: 1px solid var(--border);
 }
 
+.inspector-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.inspector-name {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.inspector-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.inspector-meta dt {
+  color: var(--text-faint);
+}
+
+.inspector-meta dd {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.inspector-calls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.inspector-calls h3 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+
+.inspector-calls ul {
+  list-style: none;
+}
+
+.call-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text-muted);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.call-link:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+.code-missing {
+  font-size: 11px;
+}
+
+.code-block {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.code-line {
+  display: flex;
+  white-space: pre;
+}
+
+.code-line-hl {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.code-ln {
+  min-width: 3em;
+  padding-right: 1em;
+  text-align: right;
+  color: var(--text-faint);
+  user-select: none;
+}
+
+.code-txt {
+  flex: 1;
+  padding-right: 1em;
+  color: var(--text-muted);
+}
+
 .panel-terminal {
   grid-area: terminal;
   border-top: 1px solid var(--border);
@@ -226,6 +333,8 @@
   align-items: center;
   gap: 8px;
   margin-top: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
 }
 
 .prompt {
@@ -253,6 +362,14 @@
   text-transform: none;
   letter-spacing: 0;
   color: var(--text-faint);
+}
+
+.log-echo {
+  color: var(--text);
+}
+
+.log-ok {
+  color: var(--accent);
 }
 
 .statusbar {

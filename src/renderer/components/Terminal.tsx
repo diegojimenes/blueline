@@ -7,11 +7,16 @@ export function Terminal() {
   const gotoId = useStore((s) => s.gotoId);
   const [input, setInput] = useState("");
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const el = bodyRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [log]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,24 +40,31 @@ export function Terminal() {
           </p>
         ) : (
           <ul className="terminal-log">
-            {log.map((line) =>
-              line.target ? (
+            {log.map((line) => {
+              const isEcho = line.text.startsWith("$ ");
+              return line.target ? (
                 <li key={line.id}>
-                  <button type="button" className="log-line log-line-clickable" onClick={() => gotoId(line.target!)}>
+                  <button
+                    type="button"
+                    className={`log-line log-line-clickable${isEcho ? " log-echo" : " log-ok"}`}
+                    onClick={() => gotoId(line.target!)}
+                    title="voltar a este ponto"
+                  >
                     {line.text}
                   </button>
                 </li>
               ) : (
                 <li key={line.id}>
-                  <span className="log-line">{line.text}</span>
+                  <span className={`log-line${isEcho ? " log-echo" : ""}`}>{line.text}</span>
                 </li>
-              ),
-            )}
+              );
+            })}
           </ul>
         )}
         <form className="terminal-input" onSubmit={onSubmit}>
           <span className="prompt">$</span>
           <input
+            ref={inputRef}
             aria-label="Comando CodeAtlas"
             value={input}
             onChange={(e) => setInput(e.target.value)}

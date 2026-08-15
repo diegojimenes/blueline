@@ -190,3 +190,10 @@ export const demoGraph: SerializedGraph = {
     }
   ]
 };
+
+export const demoSources: Record<string, string> = {
+  "src/auth/AuthService.ts": "export class AuthService {\n  login(user: string): string {\n    return `token:${user}`;\n  }\n}\n",
+  "src/gateway/Gateway.ts": "import { AuthService } from \"../auth/AuthService\";\nimport { PedidoService } from \"../pedidos/PedidoService\";\n\nexport class Gateway {\n  start(): void {\n    const auth = new AuthService();\n    auth.login(\"admin\");\n    const pedidos = new PedidoService();\n    pedidos.criarPedido();\n  }\n}\n",
+  "src/pedidos/Pedido.ts": "export class Pedido {\n  constructor(public id: number) {}\n\n  calcularTotal(): number {\n    return this.id * 10;\n  }\n}\n",
+  "src/pedidos/PedidoService.ts": "import { Pedido } from \"./Pedido\";\n\nexport class PedidoService {\n  criarPedido(): Pedido {\n    const p = new Pedido(1);\n    p.calcularTotal();\n    return p;\n  }\n}\n"
+};
