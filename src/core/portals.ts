@@ -1,8 +1,9 @@
 /**
  * Portais (specs/05-rendering.md): nós tracejados na borda do canvas que
  * representam arestas que saem do foco atual. Clique navega lateralmente,
- * mantendo o nível (muda o focus, não o level): no nível 3 o alvo é a CLASSE
- * dona do método externo.
+ * mantendo o nível (muda o focus, não o level):
+ *  - nível 3: alvo é a CLASSE dona do método externo;
+ *  - nível 4: alvo é o próprio método (seguir chamadas fora do método).
  */
 
 import type { NodeId, ProjectConfig } from "./model/types";
@@ -24,18 +25,18 @@ export interface Portal {
 const PORTAL_INSET = 14;
 
 /**
- * Calcula portais do nível 3 (classe): arestas `call` que ligam um método
- * visível a um nó fora do foco. Cada alvo externo vira um portal posicionado
- * na borda mais próxima do nó de origem.
+ * Calcula portais dos níveis 3 (classe), 4 (método) e 5 (funções locais):
+ * arestas `call` que ligam um nó visível a um nó fora do foco. Cada alvo
+ * externo vira um portal posicionado na borda mais próxima do nó de origem.
  */
 export function portalsOf(
   graph: SerializedGraph,
-  nav: { level: 1 | 2 | 3 | 4; focus: NodeId | null },
+  nav: { level: 1 | 2 | 3 | 4 | 5; focus: NodeId | null },
   positions: LayoutMap,
   viewport: Rect,
   config: ProjectConfig = {},
 ): Portal[] {
-  if (nav.level !== 3 || !nav.focus) return [];
+  if (nav.level < 3 || !nav.focus) return [];
 
   const visible = new Set(visibleNodes(graph, nav, config).map((n) => n.id));
   const portals: Portal[] = [];
@@ -54,7 +55,8 @@ export function portalsOf(
 
     const external = nodeById(graph, externalId);
     if (!external) continue;
-    const targetId = external.kind === "method" ? external.owner : external.id;
+    // Nível 3: o alvo é a classe dona do método externo; níveis 4/5: o próprio método.
+    const targetId = nav.level === 3 && external.kind === "method" ? external.owner : external.id;
     if (seen.has(targetId)) continue;
     seen.add(targetId);
 

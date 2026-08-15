@@ -11,6 +11,7 @@
 | 2 — Módulo | `ClassNode`s do módulo em foco | `import` (e call agregado) | duplo clique em classe → nível 3 |
 | 3 — Classe | `MethodNode`s da classe | `call` interno; setas de fora | duplo clique em método → abre código (nível 4) |
 | 4 — Método | Inspector com código-fonte + chamadas | listas "Chamado por"/"Chama" | clique em item → salto lateral |
+| 5 — Função local | `LocalNode`s do método em foco (funções aninhadas) | `call` interno entre locais | duplo clique em local → abre código |
 
 - Transições são **ações explícitas** (duplo clique, comando, breadcrumb). Não há scroll de mouse que mude de
   nível; scroll/pan apenas desloca dentro do nível atual.
@@ -51,8 +52,10 @@
 
 ## Código-fonte (nível 4)
 
-- O método em foco abre no Inspector com syntax highlight (lib leve ou highlight próprio simples no MVP).
+- O método em foco abre no Inspector com o código-fonte real do arquivo (lido do disco via `file_read` no Tauri).
 - Listas de chamadas clicáveis executam `goto <target>`.
+- Métodos com funções aninhadas (arrows/locais) têm um nível 5: duplo clique entra nas
+  `LocalNode`s, `up`/Esc volta. Portais valem nos níveis 3–5.
 
 ## Contratos de teste
 

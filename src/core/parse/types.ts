@@ -13,6 +13,12 @@ export interface MethodSymbol {
   endLine: number;
 }
 
+/** Função aninhada dentro de um método/função (nível 5). */
+export interface LocalSymbol extends MethodSymbol {
+  /** Nome do método/função que a contém. */
+  owner: string;
+}
+
 export interface ClassSymbol {
   name: string;
   startLine: number;
@@ -41,6 +47,8 @@ export interface FileSymbols {
   classes: ClassSymbol[];
   /** Funções/funções-arrow de topo de arquivo. */
   methods: MethodSymbol[];
+  /** Funções aninhadas dentro de métodos (nível 5). */
+  locals: LocalSymbol[];
   imports: ImportSymbol[];
   calls: CallSymbol[];
 }

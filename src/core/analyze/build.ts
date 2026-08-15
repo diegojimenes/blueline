@@ -109,6 +109,25 @@ export function buildGraph(files: BuildFileInput[], projectRoot: string, config:
       list.push(record.id);
       methodsByName.set(record.symbol.name, list);
     }
+    // Funções aninhadas (nível 5): nós `local` filiados ao método que as contém.
+    const localIdByName = new Map<string, NodeId>();
+    for (const local of symbols.locals) {
+      const ownerId =
+        localIdByName.get(local.owner) ?? records.find((r) => r.symbol.name === local.owner)?.id;
+      if (!ownerId) continue;
+      const localId = `local:${path}:${ownerId}:${local.name}`;
+      nodes.set(localId, {
+        kind: "local",
+        id: localId,
+        name: local.name,
+        file: path,
+        startLine: local.startLine,
+        owner: ownerId,
+      });
+      const memberEdgeId = `member:${ownerId}:${localId}`;
+      edges.set(memberEdgeId, { id: memberEdgeId, type: "member", from: ownerId, to: localId });
+      localIdByName.set(local.name, localId);
+    }
     for (const classId of classIds) {
       const list = byModule.get(moduleId) ?? [];
       if (!list.includes(classId)) list.push(classId);

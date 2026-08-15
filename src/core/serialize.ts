@@ -6,7 +6,8 @@ export type SerializedNode =
   | { id: NodeId; kind: "project"; name: string }
   | { id: NodeId; kind: "module"; name: string; path: string }
   | { id: NodeId; kind: "class"; name: string; file: string; startLine: number }
-  | { id: NodeId; kind: "method"; name: string; file: string; startLine: number; owner: NodeId };
+  | { id: NodeId; kind: "method"; name: string; file: string; startLine: number; owner: NodeId }
+  | { id: NodeId; kind: "local"; name: string; file: string; startLine: number; owner: NodeId };
 
 export interface SerializedEdge {
   id: EdgeId;
@@ -36,6 +37,15 @@ export function serializeNode(node: Node): SerializedNode {
       return {
         id: node.id,
         kind: "method",
+        name: node.name,
+        file: node.file,
+        startLine: node.startLine,
+        owner: node.owner,
+      };
+    case "local":
+      return {
+        id: node.id,
+        kind: "local",
         name: node.name,
         file: node.file,
         startLine: node.startLine,

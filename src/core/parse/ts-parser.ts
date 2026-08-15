@@ -1,5 +1,13 @@
 import { Language, Parser as WebTreeSitterParser, type Node as TsNode } from "web-tree-sitter";
-import type { CallSymbol, ClassSymbol, FileSymbols, ImportSymbol, MethodSymbol, Parser } from "./types";
+import type {
+  CallSymbol,
+  ClassSymbol,
+  FileSymbols,
+  ImportSymbol,
+  LocalSymbol,
+  MethodSymbol,
+  Parser,
+} from "./types";
 
 export interface TypeScriptParserOptions {
   /** Caminho ou bytes da gramática TS (tree-sitter-typescript.wasm). */
@@ -56,7 +64,7 @@ class TypeScriptParser implements Parser {
     const parser = TSX_EXT.test(file) ? this.tsx : this.ts;
     const tree = parser.parse(content);
     if (!tree) {
-      return { file, classes: [], methods: [], imports: [], calls: [] };
+      return { file, classes: [], methods: [], locals: [], imports: [], calls: [] };
     }
     return extractSymbols(file, tree.rootNode);
   }
@@ -65,20 +73,46 @@ class TypeScriptParser implements Parser {
 function extractSymbols(file: string, root: TsNode): FileSymbols {
   const classes: ClassSymbol[] = [];
   const methods: MethodSymbol[] = [];
+  const locals: LocalSymbol[] = [];
   const imports: ImportSymbol[] = [];
   const calls: CallSymbol[] = [];
-  /** Ranges de métodos para atribuir cada chamada ao dono (mais interno). */
+  /** Ranges de funções (métodos + locais) para atribuir cada chamada ao dono. */
   const methodRanges: MethodSymbol[] = [];
 
-  collect(root);
+  collect(root, null);
 
   for (const call of calls) {
     call.owner = findOwner(methodRanges, call.line);
   }
 
-  return { file, classes, methods, imports, calls };
+  return { file, classes, methods, locals, imports, calls };
 
-  function collect(node: TsNode): void {
+  function collect(node: TsNode, inside: MethodSymbol | null): void {
+    // Método de classe: já registrado no ClassSymbol/methodRanges; aqui só
+    // desce no corpo para achar as funções locais (nível 5).
+    if (node.type === "method_definition") {
+      const symbol = functionSymbolOf(node);
+      if (symbol) {
+        for (const child of node.namedChildren) collect(child, symbol);
+        return;
+      }
+    }
+    if (isFunctionHolder(node)) {
+      const symbol = functionSymbolOf(node);
+      if (symbol) {
+        if (inside) {
+          const local: LocalSymbol = { ...symbol, owner: inside.name };
+          locals.push(local);
+          methodRanges.push(local);
+        } else {
+          methods.push(symbol);
+          methodRanges.push(symbol);
+        }
+        for (const child of node.namedChildren) collect(child, symbol);
+        return;
+      }
+    }
+
     switch (node.type) {
       case "class_declaration": {
         const name = node.childForFieldName("name")?.text ?? "(anonymous)";
@@ -98,42 +132,6 @@ function extractSymbols(file: string, root: TsNode): FileSymbols {
           }
         }
         classes.push({ name, startLine: node.startPosition.row + 1, methods: classMethods });
-        break;
-      }
-      case "function_declaration": {
-        const name = node.childForFieldName("name")?.text;
-        if (name) {
-          const symbol: MethodSymbol = {
-            name,
-            startLine: node.startPosition.row + 1,
-            endLine: node.endPosition.row + 1,
-          };
-          methods.push(symbol);
-          methodRanges.push(symbol);
-        }
-        break;
-      }
-      case "lexical_declaration": {
-        for (const declarator of node.namedChildren) {
-          if (declarator.type !== "variable_declarator") continue;
-          const value = declarator.childForFieldName("value");
-          if (!value) continue;
-          const isFunction =
-            value.type === "arrow_function" ||
-            value.type === "function_expression" ||
-            value.type === "generator_function";
-          if (!isFunction) continue;
-          const name = declarator.childForFieldName("name")?.text;
-          if (name) {
-            const symbol: MethodSymbol = {
-              name,
-              startLine: declarator.startPosition.row + 1,
-              endLine: value.endPosition.row + 1,
-            };
-            methods.push(symbol);
-            methodRanges.push(symbol);
-          }
-        }
         break;
       }
       case "import_statement": {
@@ -164,9 +162,50 @@ function extractSymbols(file: string, root: TsNode): FileSymbols {
       }
     }
     for (const child of node.namedChildren) {
-      collect(child);
+      collect(child, inside);
     }
   }
+}
+
+function isFunctionValue(type: string): boolean {
+  return type === "arrow_function" || type === "function_expression" || type === "generator_function";
+}
+
+/** Nó que "segura" uma função nomeada (declaração, método ou const = fn). */
+function isFunctionHolder(node: TsNode): boolean {
+  if (node.type === "function_declaration" || node.type === "generator_function_declaration") return true;
+  if (node.type === "lexical_declaration") {
+    return node.namedChildren.some((d) => {
+      if (d.type !== "variable_declarator") return false;
+      const v = d.childForFieldName("value");
+      return v != null && isFunctionValue(v.type);
+    });
+  }
+  return false;
+}
+
+function functionSymbolOf(node: TsNode): MethodSymbol | null {
+  if (node.type === "method_definition") {
+    const name = node.childForFieldName("name")?.text;
+    if (!name || name === "constructor") return null;
+    return { name, startLine: node.startPosition.row + 1, endLine: node.endPosition.row + 1 };
+  }
+  if (node.type === "function_declaration" || node.type === "generator_function_declaration") {
+    const name = node.childForFieldName("name")?.text;
+    if (!name) return null;
+    return { name, startLine: node.startPosition.row + 1, endLine: node.endPosition.row + 1 };
+  }
+  if (node.type === "lexical_declaration") {
+    for (const declarator of node.namedChildren) {
+      if (declarator.type !== "variable_declarator") continue;
+      const value = declarator.childForFieldName("value");
+      if (!value || !isFunctionValue(value.type)) continue;
+      const name = declarator.childForFieldName("name")?.text;
+      if (!name) return null;
+      return { name, startLine: node.startPosition.row + 1, endLine: value.endPosition.row + 1 };
+    }
+  }
+  return null;
 }
 
 function calleeName(fn: TsNode | null): string | undefined {

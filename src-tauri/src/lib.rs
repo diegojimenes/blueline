@@ -22,6 +22,12 @@ struct ProjectFile {
     content: String,
 }
 
+#[derive(Serialize, Clone)]
+struct GitStatus {
+    repo: bool,
+    dirty: Vec<String>,
+}
+
 struct AppState {
     ttys: TtyRegistry,
     watcher: Mutex<Option<watcher::BatchWatcher>>,
@@ -112,15 +118,15 @@ fn watch_stop(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 /// Arquivos com mudança real no repo (fonte de verdade: `git status --porcelain`).
-/// Fora de repo git, não há diff — retorna vazio (watcher cobre via conteúdo).
+/// Fora de repo git, `repo` é falso e `dirty` fica vazio (watcher cobre via conteúdo).
 #[tauri::command]
-fn git_status(state: State<'_, AppState>, project_path: String) -> Result<Vec<String>, String> {
+fn git_status(state: State<'_, AppState>, project_path: String) -> Result<GitStatus, String> {
     let git = state.git.clone();
     let dir = Path::new(&project_path);
     if !git.is_repo(dir) {
-        return Ok(Vec::new());
+        return Ok(GitStatus { repo: false, dirty: Vec::new() });
     }
-    Ok(git.dirty_files(dir))
+    Ok(GitStatus { repo: true, dirty: git.dirty_files(dir) })
 }
 
 /// Lê o conteúdo atual de um arquivo relativo ao projeto (fase de re-parse).

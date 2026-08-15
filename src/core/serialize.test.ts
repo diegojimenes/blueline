@@ -5,11 +5,13 @@ import { fixturePath, loadFixture } from "./test-helpers";
 
 let basicJson: ReturnType<typeof toJSON>;
 let messyJson: ReturnType<typeof toJSON>;
+let nestedJson: ReturnType<typeof toJSON>;
 
 beforeAll(async () => {
-  const [b, m] = await Promise.all([loadFixture("basic"), loadFixture("messy")]);
+  const [b, m, n] = await Promise.all([loadFixture("basic"), loadFixture("messy"), loadFixture("nested")]);
   basicJson = toJSON(buildGraph(b.files, fixturePath("basic")).graph);
   messyJson = toJSON(buildGraph(m.files, fixturePath("messy")).graph);
+  nestedJson = toJSON(buildGraph(n.files, fixturePath("nested")).graph);
 });
 
 describe("toJSON", () => {
@@ -45,6 +47,12 @@ describe("toJSON", () => {
 
   it("produz grafo golden estável (fixture messy)", () => {
     expect(messyJson).toMatchSnapshot();
+  });
+
+  it("serializa funções locais com owner (fixture nested)", () => {
+    const locals = nestedJson.nodes.filter((n) => n.kind === "local");
+    expect(locals.map((l) => l.name).sort()).toEqual(["double", "sum"]);
+    expect(locals[0].owner).toContain("process");
   });
 });
 

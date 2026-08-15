@@ -11,6 +11,7 @@
   --text-faint: #5b6270;
   --accent: #528bff;
   --accent-dim: #316dca;
+  --warn: #e5a63d;
   --font-ui:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -28,6 +29,7 @@
   --text-faint: #8b93a0;
   --accent: #316dca;
   --accent-dim: #245ba8;
+  --warn: #a97b16;
 }
 
 * {

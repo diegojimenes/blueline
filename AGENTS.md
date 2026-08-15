@@ -56,6 +56,10 @@ Nome de trabalho: **CodeAtlas**.
 > não sobe revisão); `open <dir>` no terminal com parse inicial no webview (tree-sitter WASM via `?url`);
 > pulso de nós afetados no canvas + status bar do watcher; 122 testes vitest + 8 cargo) — ver
 > `specs/12-milestones.md`.
+> **M5.1 concluído — refinamentos de UX** (nível 5: funções locais/`local` dentro de métodos; app abre
+> limpo sem demo; botão "Abrir" na UI; Inspector lê código real do disco; git na status bar + ● no
+> Explorer; terminal (re)spawna no diretório do projeto; duplo clique no vazio/↑ voltar sobem nível;
+> 129 testes vitest + 8 cargo) — ver `specs/12-milestones.md`.
 > Próximo: backlog pós-MVP (hooks por agente, busca fuzzy, outras linguagens).
 
 ## Checklist ao trabalhar aqui

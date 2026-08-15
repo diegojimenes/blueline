@@ -8,7 +8,7 @@
 export type NodeId = string;
 export type EdgeId = string;
 
-export type Level = 1 | 2 | 3 | 4;
+export type Level = 1 | 2 | 3 | 4 | 5;
 export type LensId = "layers" | "coupling" | "domain";
 
 export type Node =
@@ -17,6 +17,14 @@ export type Node =
   | { kind: "class"; id: NodeId; name: string; file: string; startLine: number }
   | {
       kind: "method";
+      id: NodeId;
+      name: string;
+      file: string;
+      startLine: number;
+      owner: NodeId;
+    }
+  | {
+      kind: "local";
       id: NodeId;
       name: string;
       file: string;

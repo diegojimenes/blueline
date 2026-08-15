@@ -92,7 +92,7 @@ export function Canvas() {
     const positions = s.layout;
     const viewport: Rect = { x: 0, y: 0, width, height };
     const portals =
-      s.graph && positions && s.level === 3 && s.focus
+      s.graph && positions && s.level >= 3 && s.focus
         ? portalsOf(s.graph, { level: s.level, focus: s.focus }, positions, viewport, {})
         : [];
     ctxRef.current = { positions: positions ?? new Map(), portals };
@@ -104,7 +104,7 @@ export function Canvas() {
       ctx.fillStyle = css("--text-faint");
       ctx.font = "12px var(--font-mono)";
       ctx.textAlign = "center";
-      ctx.fillText("nenhum projeto carregado — demo é carregada automaticamente", width / 2, height / 2);
+      ctx.fillText("nenhum projeto aberto — use “Abrir” (ou `open <diretório>` no terminal)", width / 2, height / 2);
       return;
     }
 
@@ -190,7 +190,10 @@ export function Canvas() {
 
   const onDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const hit = hitTest(pointOf(e));
-    if (!hit) return;
+    if (!hit) {
+      up();
+      return;
+    }
     if (hit.kind === "portal") gotoId(hit.id);
     else enterNode(hit.id);
   };
@@ -205,6 +208,11 @@ export function Canvas() {
       <div className="panel-title">
         <Breadcrumb />
         <span className="badge">nível {level}</span>
+        {level > 1 && (
+          <button className="btn btn-up" title="voltar um nível (duplo clique no vazio / Esc)" onClick={up}>
+            ↑ voltar
+          </button>
+        )}
       </div>
       <div className="panel-body canvas-wrap" ref={wrapRef}>
         <canvas
@@ -319,49 +327,97 @@ function drawEdges(
 ) {
   ctx.save();
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
   if (level === 1) {
+    // Arestas entre módulos: retas finas, alpha baixo, leve afastamento entre
+    // pares opostos (A→B e B→A) e um ponto no destino — visual limpo.
     for (const edge of graph.moduleEdges) {
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
-      const { fx, fy, tx, ty } = edgePorts(from, to);
-      ctx.strokeStyle = withAlpha(css("--accent-dim"), 0.55);
-      ctx.lineWidth = widthFor(edge, lens, graph);
-      ctx.beginPath();
-      ctx.moveTo(fx, fy);
-      ctx.lineTo(tx, ty);
-      ctx.stroke();
+      const shape = edgeShape(from, to, (edge.from < edge.to ? 1 : -1) * 4);
+      ctx.strokeStyle = withAlpha(css("--accent-dim"), 0.4);
+      ctx.lineWidth = Math.max(1, widthFor(edge, lens, graph));
+      strokeCurve(ctx, shape);
+      drawDot(ctx, shape);
     }
   } else if (level === 2) {
-    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.45);
+    // Imports entre classes do módulo foco: retas quase invisíveis.
+    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.3);
     ctx.lineWidth = 1;
     for (const edge of graph.edges) {
       if (edge.type !== "import") continue;
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
-      const { fx, fy, tx, ty } = edgePorts(from, to);
-      ctx.beginPath();
-      ctx.moveTo(fx, fy);
-      ctx.lineTo(tx, ty);
-      ctx.stroke();
+      const shape = edgeShape(from, to, 0);
+      strokeCurve(ctx, shape);
+      drawDot(ctx, shape);
     }
   } else if (level === 3) {
-    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.45);
-    ctx.lineWidth = 1.2;
+    // Chamadas entre métodos da classe foco: retas finas com ponto no destino.
+    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.35);
+    ctx.lineWidth = 1;
     for (const edge of graph.edges) {
       if (edge.type !== "call") continue;
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
-      const { fx, fy, tx, ty } = edgePorts(from, to);
-      ctx.beginPath();
-      ctx.moveTo(fx, fy);
-      ctx.quadraticCurveTo((fx + tx) / 2, Math.min(fy, ty) - 34, tx, ty);
-      ctx.stroke();
+      const shape = edgeShape(from, to, 0);
+      strokeCurve(ctx, shape);
+      drawDot(ctx, shape);
+    }
+  } else if (level === 5) {
+    // Chamadas entre funções locais do método foco.
+    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.35);
+    ctx.lineWidth = 1;
+    for (const edge of graph.edges) {
+      if (edge.type !== "call") continue;
+      const from = positions.get(edge.from);
+      const to = positions.get(edge.to);
+      if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
+      const shape = edgeShape(from, to, 0);
+      strokeCurve(ctx, shape);
+      drawDot(ctx, shape);
     }
   }
   ctx.restore();
+}
+
+interface EdgeShape {
+  fx: number;
+  fy: number;
+  tx: number;
+  ty: number;
+  cx: number;
+  cy: number;
+}
+
+/** Curva quadrática de `from` a `to`, inclinada `lift` px para um lado (normal). */
+function edgeShape(from: Rect, to: Rect, lift: number): EdgeShape {
+  const { fx, fy, tx, ty } = edgePorts(from, to);
+  const dx = tx - fx;
+  const dy = ty - fy;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  return { fx, fy, tx, ty, cx: (fx + tx) / 2 + nx * lift, cy: (fy + ty) / 2 + ny * lift };
+}
+
+function strokeCurve(ctx: CanvasRenderingContext2D, s: EdgeShape) {
+  ctx.beginPath();
+  ctx.moveTo(s.fx, s.fy);
+  ctx.quadraticCurveTo(s.cx, s.cy, s.tx, s.ty);
+  ctx.stroke();
+}
+
+/** Ponto discreto no destino (substitui a seta, mais limpo). */
+function drawDot(ctx: CanvasRenderingContext2D, s: EdgeShape) {
+  ctx.beginPath();
+  ctx.arc(s.tx, s.ty, 2.2, 0, Math.PI * 2);
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.fill();
 }
 
 function drawPortals(ctx: CanvasRenderingContext2D, portals: Portal[], visible: Set<NodeId>) {

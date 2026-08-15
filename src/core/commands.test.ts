@@ -13,7 +13,7 @@ import {
   resolveTarget,
   runCommand,
 } from "./commands";
-import { PROJECT_ID } from "./navigation";
+import { PROJECT_ID, visibleNodes } from "./navigation";
 
 describe("parseCommand", () => {
   it("separa verbo e argumento, normalizando o verbo", () => {
@@ -179,5 +179,51 @@ describe("cmdLs (fixture basic)", () => {
     const r = cmdLs(graph, navFor(4, "method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start"), {});
     expect(r.lines.join("\n")).toContain("chama:");
     expect(r.lines.join("\n")).toContain("auth.AuthService.login");
+  });
+});
+
+describe("nível 5 — funções locais (fixture nested)", () => {
+  let graph: SerializedGraph;
+  beforeEach(async () => {
+    graph = await loadSerialized("nested");
+  });
+
+  function navFor(level: number, focus: string | null): NavigationState {
+    return { focus, level: level as 1 | 2 | 3 | 4 | 5, lens: "layers", trail: [], selected: null, visited: new Set() };
+  }
+
+  const PROCESS = "method:src/lib/Calc.ts:class:src/lib/Calc.ts:Calc:process";
+  const DOUBLE = "local:src/lib/Calc.ts:method:src/lib/Calc.ts:class:src/lib/Calc.ts:Calc:process:double";
+
+  it("cria nós 'local' filiados ao método (aresta member)", () => {
+    const process = graph.nodes.find((n) => n.id === PROCESS);
+    expect(process?.kind).toBe("method");
+    const locals = graph.nodes.filter((n) => n.kind === "local" && n.owner === PROCESS);
+    expect(locals.map((l) => l.name).sort()).toEqual(["double", "sum"]);
+    const member = graph.edges.find((e) => e.type === "member" && e.from === PROCESS && e.to === DOUBLE);
+    expect(member).toBeDefined();
+  });
+
+  it("goto para uma local entra no nível 5; up volta para o método (nível 4)", () => {
+    const down = gotoNode(graph, navFor(4, PROCESS), DOUBLE, {});
+    expect(down.nav.level).toBe(5);
+    expect(down.nav.focus).toBe(DOUBLE);
+    expect(down.nav.trail[down.nav.trail.length - 1]).toBe(DOUBLE);
+    const up = cmdUp(graph, down.nav, {});
+    expect(up.nav.level).toBe(4);
+    expect(up.nav.focus).toBe(PROCESS);
+  });
+
+  it("local em foco (folha) continua visível no canvas — não cai em estado vazio", () => {
+    const visible = visibleNodes(graph, { level: 5, focus: DOUBLE }, {});
+    expect(visible.map((n) => n.id)).toEqual([DOUBLE]);
+  });
+
+  it("cmdLs nível 5 lista as funções locais", () => {
+    const r = cmdLs(graph, navFor(5, PROCESS), {});
+    const text = r.lines.join("\n");
+    expect(text).toContain("double");
+    expect(text).toContain("sum");
+    expect(text).toContain("(local)");
   });
 });

@@ -12,18 +12,11 @@ export default function App() {
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
   const projectPath = useStore((s) => s.projectPath);
-  const graph = useStore((s) => s.graph);
-  const loadDemo = useStore((s) => s.loadDemo);
   const openProjectDialog = useStore((s) => s.openProjectDialog);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
-
-  // Sem projeto real (M3/M5) ainda, a demo entra automaticamente para exercitar o M2.
-  useEffect(() => {
-    if (!graph) loadDemo();
-  }, [graph, loadDemo]);
 
   // Barramento do watcher (M5): um único listener por janela.
   useEffect(() => {

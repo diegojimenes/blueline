@@ -58,6 +58,29 @@ describe("portalsOf", () => {
     }
   });
 
+  it("nível 4: método com chamadas externas gera portais para os métodos alvo", async () => {
+    const graph = await loadSerialized("basic");
+    const start = graph.nodes.find((n) => n.kind === "method" && n.name === "start");
+    expect(start).toBeDefined();
+    const positions = new Map();
+    positions.set(start!.id, { x: 100, y: 100, width: 200, height: 200 });
+    const portals: Portal[] = portalsOf(
+      graph,
+      { level: 4, focus: start!.id },
+      positions,
+      { x: 0, y: 0, width: 800, height: 600 },
+      {},
+    );
+    // login (AuthService) e criarPedido (PedidoService) são alvos fora do foco.
+    expect(portals.length).toBeGreaterThanOrEqual(2);
+    expect(portals.some((p) => p.label.includes("login"))).toBe(true);
+    expect(portals.some((p) => p.label.includes("criarPedido"))).toBe(true);
+    for (const p of portals) {
+      const t = graph.nodes.find((n) => n.id === p.target);
+      expect(t?.kind).toBe("method"); // nível 4 pula direto para o método externo
+    }
+  });
+
   it("nível 1 não gera portais", async () => {
     const graph = await loadSerialized("basic");
     expect(portalsOf(graph, { level: 1, focus: null }, new Map(), { x: 0, y: 0, width: 100, height: 100 }, {}).length).toBe(0);

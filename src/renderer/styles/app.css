@@ -44,6 +44,23 @@
   border-color: var(--accent);
 }
 
+.btn-up {
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.btn-up:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
 .app-project {
   color: var(--text-muted);
   font-family: var(--font-mono);
@@ -164,6 +181,13 @@
 
 .tree-kind-module .tree-label {
   color: var(--accent);
+}
+
+.tree-dirty {
+  color: var(--warn);
+  font-size: 9px;
+  margin-right: 4px;
+  vertical-align: middle;
 }
 
 .tree-kind-class .tree-label,

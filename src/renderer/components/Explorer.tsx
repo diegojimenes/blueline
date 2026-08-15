@@ -8,6 +8,7 @@ export function Explorer() {
   const projectOpen = useStore((s) => s.projectOpen);
   const selected = useStore((s) => s.selected);
   const gotoId = useStore((s) => s.gotoId);
+  const gitDirty = useStore((s) => s.gitDirty);
 
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(["project"]));
   const selectedRef = useRef<HTMLLIElement | null>(null);
@@ -28,19 +29,28 @@ export function Explorer() {
       graph.nodes
         .filter((n): n is Extract<SerializedNode, { kind: "method" }> => n.kind === "method" && n.owner === cls.id)
         .sort((a, b) => a.startLine - b.startLine);
+    const localsOf = (me: Extract<SerializedNode, { kind: "method" }>) =>
+      graph.nodes
+        .filter((n): n is Extract<SerializedNode, { kind: "local" }> => n.kind === "local" && n.owner === me.id)
+        .sort((a, b) => a.startLine - b.startLine);
     return {
       project: graph.nodes.find((n) => n.kind === "project"),
       modules,
       classesOf,
       methodsOf,
+      localsOf,
     };
   }, [graph, config]);
 
-  // Mantém a trilha do nó selecionado expandida (sync seleção ↔ árvore).
+  // Mantém a trilha do nó selecionado expandida (sync seleção ↔ árvore),
+  // mas respeita colapso manual: só re-expande quando a trilha some da tela.
   useEffect(() => {
     if (!graph || !selected) return;
     const ancestors = ancestorChain(graph, selected, config);
-    setExpanded((prev) => new Set([...prev, ...ancestors]));
+    setExpanded((prev) => {
+      const pathVisible = ancestors.every((a) => prev.has(a));
+      return pathVisible ? prev : new Set([...prev, ...ancestors]);
+    });
   }, [selected, graph, config]);
 
   useEffect(() => {
@@ -80,7 +90,10 @@ export function Explorer() {
             hasChildren={tree.modules.length > 0}
             isSelected={selected === project.id}
             onToggle={() => toggle(project.id)}
-            onSelect={() => gotoId(project.id)}
+            onSelect={() => {
+              if (tree.modules.length > 0) toggle(project.id);
+              gotoId(project.id);
+            }}
             innerRef={selected === project.id ? selectedRef : undefined}
           >
               {tree.modules.map((m) => (
@@ -93,7 +106,10 @@ export function Explorer() {
                   hasChildren={tree.classesOf(m).length > 0}
                   isSelected={selected === m.id}
                   onToggle={() => toggle(m.id)}
-                  onSelect={() => gotoId(m.id)}
+                  onSelect={() => {
+                    if (tree.classesOf(m).length > 0) toggle(m.id);
+                    gotoId(m.id);
+                  }}
                   innerRef={selected === m.id ? selectedRef : undefined}
                 >
                   {tree.classesOf(m).map((c) => (
@@ -106,7 +122,11 @@ export function Explorer() {
                       hasChildren={tree.methodsOf(c).length > 0}
                       isSelected={selected === c.id}
                       onToggle={() => toggle(c.id)}
-                      onSelect={() => gotoId(c.id)}
+                      onSelect={() => {
+                        if (tree.methodsOf(c).length > 0) toggle(c.id);
+                        gotoId(c.id);
+                      }}
+                      dirty={gitDirty.includes(c.file)}
                       innerRef={selected === c.id ? selectedRef : undefined}
                     >
                       {tree.methodsOf(c).map((me) => (
@@ -115,13 +135,31 @@ export function Explorer() {
                           node={me}
                           label={me.name}
                           depth={3}
-                          expanded={false}
-                          hasChildren={false}
+                          expanded={expanded.has(me.id)}
+                          hasChildren={tree.localsOf(me).length > 0}
                           isSelected={selected === me.id}
                           onToggle={() => toggle(me.id)}
-                          onSelect={() => gotoId(me.id)}
+                          onSelect={() => {
+                            if (tree.localsOf(me).length > 0) toggle(me.id);
+                            gotoId(me.id);
+                          }}
                           innerRef={selected === me.id ? selectedRef : undefined}
-                        />
+                        >
+                          {tree.localsOf(me).map((l) => (
+                            <TreeItem
+                              key={l.id}
+                              node={l}
+                              label={l.name}
+                              depth={4}
+                              expanded={false}
+                              hasChildren={false}
+                              isSelected={selected === l.id}
+                              onToggle={() => toggle(l.id)}
+                              onSelect={() => gotoId(l.id)}
+                              innerRef={selected === l.id ? selectedRef : undefined}
+                            />
+                          ))}
+                        </TreeItem>
                       ))}
                     </TreeItem>
                   ))}
@@ -139,6 +177,7 @@ interface ExplorerTree {
   modules: Extract<SerializedNode, { kind: "module" }>[];
   classesOf: (module: Extract<SerializedNode, { kind: "module" }>) => Extract<SerializedNode, { kind: "class" }>[];
   methodsOf: (cls: Extract<SerializedNode, { kind: "class" }>) => Extract<SerializedNode, { kind: "method" }>[];
+  localsOf: (me: Extract<SerializedNode, { kind: "method" }>) => Extract<SerializedNode, { kind: "local" }>[];
 }
 
 interface TreeItemProps {
@@ -150,11 +189,12 @@ interface TreeItemProps {
   isSelected: boolean;
   onToggle: () => void;
   onSelect: () => void;
+  dirty?: boolean;
   innerRef?: React.Ref<HTMLLIElement>;
   children?: React.ReactNode;
 }
 
-function TreeItem({ node, label, depth, expanded, hasChildren, isSelected, onToggle, onSelect, innerRef, children }: TreeItemProps) {
+function TreeItem({ node, label, depth, expanded, hasChildren, isSelected, onToggle, onSelect, dirty, innerRef, children }: TreeItemProps) {
   const kindClass = `tree-item tree-kind-${node.kind}`;
   return (
     <li className={kindClass} role="treeitem" aria-selected={isSelected} ref={innerRef}>
@@ -171,6 +211,7 @@ function TreeItem({ node, label, depth, expanded, hasChildren, isSelected, onTog
           {hasChildren ? (expanded ? "▾" : "▸") : ""}
         </button>
         <button type="button" className="tree-label" onClick={onSelect}>
+          {dirty && <span className="tree-dirty" title="arquivo modificado">●</span>}
           {label}
         </button>
       </div>

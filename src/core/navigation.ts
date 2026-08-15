@@ -28,6 +28,8 @@ export function levelOfKind(kind: SerializedNode["kind"]): Level {
       return 3;
     case "method":
       return 4;
+    case "local":
+      return 5;
   }
 }
 
@@ -60,6 +62,16 @@ export function visibleNodes(
       const focus = nav.focus ? nodeById(graph, nav.focus) : undefined;
       return focus && focus.kind === "method" ? [focus] : [];
     }
+    case 5: {
+      const focus = nav.focus ? nodeById(graph, nav.focus) : undefined;
+      if (!focus) return [];
+      // Local já em foco (folha): mostra ela centrada, como o nível 4.
+      if (focus.kind === "local") return [focus];
+      if (focus.kind !== "method") return [];
+      return graph.nodes
+        .filter((n): n is Extract<SerializedNode, { kind: "local" }> => n.kind === "local" && n.owner === focus.id)
+        .sort((a, b) => a.startLine - b.startLine);
+    }
   }
 }
 
@@ -71,6 +83,7 @@ export function ancestorChain(graph: SerializedGraph, id: NodeId, config: Projec
   const moduleId = `module:${node.kind === "module" ? node.path : moduleOfPath(node.file, config)}`;
   if (node.kind === "module") return [PROJECT_ID, id];
   if (node.kind === "class") return [PROJECT_ID, moduleId, id];
+  if (node.kind === "local") return [PROJECT_ID, moduleId, node.owner, id];
   return [PROJECT_ID, moduleId, node.owner, id];
 }
 
@@ -88,6 +101,14 @@ export function canonicalPathOf(graph: SerializedGraph, id: NodeId, config: Proj
     case "method": {
       const owner = node.owner ? nodeById(graph, node.owner) : undefined;
       return `${moduleName(node.file, config)}.${owner?.name ?? "?"}.${node.name}`;
+    }
+    case "local": {
+      const owner = node.owner ? nodeById(graph, node.owner) : undefined;
+      if (owner) {
+        const ownerPath = canonicalPathOf(graph, owner.id, config);
+        return `${ownerPath}.${node.name}`;
+      }
+      return `${moduleName(node.file, config)}.?.${node.name}`;
     }
   }
 }
@@ -139,7 +160,7 @@ export function upNavigation(
 export function parentOf(graph: SerializedGraph, id: NodeId, config: ProjectConfig = {}): NodeId | undefined {
   const node = nodeById(graph, id);
   if (!node) return undefined;
-  if (node.kind === "method") return node.owner;
+  if (node.kind === "method" || node.kind === "local") return node.owner;
   if (node.kind === "class") return `module:${moduleOfPath(node.file, config)}`;
   if (node.kind === "module") return PROJECT_ID;
   return undefined;

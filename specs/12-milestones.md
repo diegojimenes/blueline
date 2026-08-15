@@ -98,6 +98,20 @@
   via leitura de disco; critérios de aceite de `01-mvp-scope.md` atendidos; 8 testes cargo + 122 testes
   vitest + typecheck/lint/build verdes.
 
+## M5.1 — Refinamentos de UX (pós-MVP) ✅
+
+- **Nível 5 — funções locais:** funções aninhadas dentro de métodos (arrows/declarações) viram nós
+  `local` filiados ao método (`src/core/parse/ts-parser.ts`, `src/core/analyze/build.ts`,
+  `src/core/navigation.ts`), com layout/canvas/Explorer/Inspector/portais (`specs/05-rendering.md`).
+- **Abrir repo pela UI:** botão "Abrir" no header (plugin dialog); app abre **limpo** (demo não é
+  mais auto-carregada); Inspector lê código real do disco (`file_read`).
+- **Git na UI:** `git_status` devolve `{repo, dirty}`; status bar `git: limpo/N alterados` e marcador
+  ● no Explorer para arquivos modificados.
+- **Terminal no diretório do projeto:** ao abrir um repo o PTY é (re)spawnado com cwd = raiz.
+- **Navegação:** duplo clique no vazio / botão "↑ voltar" / Esc sobem de nível; colapso da árvore
+  respeita colapso manual; arestas mais limpas (retas finas + ponto no destino).
+- 8 testes cargo + 129 testes vitest + typecheck/lint verdes.
+
 ## Backlog pós-MVP (fora do escopo, prioridade relativa)
 
 1. **Camada 2 — hooks por agente** (`PreToolUse`/`PostToolUse`): evento `agent:tool`, diff antes/depois sem esperar save.

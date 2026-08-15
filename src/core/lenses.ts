@@ -32,6 +32,7 @@ function pathOf(node: SerializedNode, config: ProjectConfig): string {
       return node.path;
     case "class":
     case "method":
+    case "local":
       return moduleOfPath(node.file, config);
   }
 }
@@ -71,7 +72,7 @@ export function couplingOf(graph: SerializedGraph, node: SerializedNode): number
     }
     return weight;
   }
-  if (node.kind === "method") {
+  if (node.kind === "method" || node.kind === "local") {
     return graph.edges.filter((e) => e.type === "call" && (e.from === node.id || e.to === node.id)).length;
   }
   if (node.kind === "class") {

@@ -41,6 +41,11 @@ export interface LogLine {
 
 export type WatcherState = "off" | "active" | "updated";
 
+export interface GitStatus {
+  repo: boolean;
+  dirty: string[];
+}
+
 interface ProjectFile {
   path: string;
   content: string;
@@ -68,6 +73,9 @@ interface AppState extends NavigationState {
   watcherTime: string | null;
   /** Nós a pulsar após a última mudança externa (M5). */
   flash: { ids: NodeId[]; at: number } | null;
+  /** Estado git do projeto aberto (status bar + marcadores no Explorer). */
+  gitRepo: boolean;
+  gitDirty: string[];
 
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -84,6 +92,8 @@ interface AppState extends NavigationState {
   applyExternalChanges: (paths: string[]) => Promise<void>;
   startWatcher: () => Promise<void>;
   stopWatcher: () => void;
+  /** Consulta `git status --porcelain` e atualiza gitRepo/gitDirty (M5+). */
+  refreshGitStatus: () => Promise<void>;
   /** Executa um comando determinístico e devolve o resultado (terminal real). */
   execCommand: (command: string) => CommandResult;
   /** Executa um comando do terminal (`goto`, `up`, `ls`, `lens`, `help`, `clear`, `open`). */
@@ -152,6 +162,8 @@ export const useStore = create<AppState>()((set, get) => {
     watcherState: "off",
     watcherTime: null,
     flash: null,
+    gitRepo: false,
+    gitDirty: [],
 
     setTheme: (theme) => set({ theme }),
     toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -178,6 +190,8 @@ export const useStore = create<AppState>()((set, get) => {
       watcherState: "off",
       watcherTime: null,
       flash: null,
+      gitRepo: false,
+      gitDirty: [],
     }),
 
   openProject: async (path) => {
@@ -204,6 +218,7 @@ export const useStore = create<AppState>()((set, get) => {
       log: [...get().log, { id: nextLogId++, text: `projeto aberto: ${path} (${inputs.length} arquivos)`, target: null }],
     });
     void get().startWatcher();
+    void get().refreshGitStatus();
   },
 
   openProjectDialog: async () => {
@@ -247,6 +262,7 @@ export const useStore = create<AppState>()((set, get) => {
         : applyFiles(before, cur.symbols, changed, root, cur.config, "parseIncremental");
     if (result.graph === before) return; // no-op: touch sem mudança real
     applyDelta(set, cur, result.delta, result.graph);
+    void get().refreshGitStatus();
   },
 
   startWatcher: async () => {
@@ -256,7 +272,7 @@ export const useStore = create<AppState>()((set, get) => {
       await invoke("watch_start", { projectPath: s.projectPath });
       set({ watcherState: "active" });
     } catch {
-      // Já ativo ou backend indisponível — demo segue sem live update.
+      // Já ativo ou backend indisponível — segue sem live update.
     }
   },
 
@@ -264,6 +280,20 @@ export const useStore = create<AppState>()((set, get) => {
     if (!isTauri()) return;
     void invoke("watch_stop").catch(() => {});
     set({ watcherState: "off" });
+  },
+
+  refreshGitStatus: async () => {
+    const s = get();
+    if (!isTauri() || !s.projectPath) {
+      set({ gitRepo: false, gitDirty: [] });
+      return;
+    }
+    try {
+      const status = await invoke<GitStatus>("git_status", { projectPath: s.projectPath });
+      set({ gitRepo: status.repo, gitDirty: status.dirty });
+    } catch {
+      set({ gitRepo: false, gitDirty: [] });
+    }
   },
 
   /** Executa um comando determinístico e devolve o resultado completo (terminal real usa isto). */
@@ -286,7 +316,7 @@ export const useStore = create<AppState>()((set, get) => {
         const result: CommandResult = {
           nav: s,
           entries: [],
-          lines: ["abrir projeto requer o app Tauri (pnpm tauri dev) — demo carregada"],
+          lines: ["abrir projeto requer o app Tauri (pnpm tauri dev)"],
           target: null,
         };
         apply(result, trimmed);
@@ -303,7 +333,7 @@ export const useStore = create<AppState>()((set, get) => {
       const result: CommandResult = {
         nav: s,
         entries: [],
-        lines: ["nenhum projeto carregado (demo via duplo clique; abra um com `open <dir>`)"],
+        lines: ["nenhum projeto carregado — abra um com `open <diretório>` ou o botão “Abrir”"],
         target: null,
       };
       apply(result, trimmed);

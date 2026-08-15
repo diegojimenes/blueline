@@ -32,7 +32,7 @@ const { fakeParser } = vi.hoisted(() => {
     supports: (file: string) => /\.[jt]sx?$/.test(file),
     parseFile: (file: string, content: string) => {
       if (content.trim().startsWith("// empty")) {
-        return { file, classes: [], methods: [], imports: [], calls: [] };
+        return { file, classes: [], methods: [], locals: [], imports: [], calls: [] };
       }
       const classMatch = content.match(/class (\w+)/);
       const fallback = file.split("/").pop()!.replace(/\.[jt]sx?$/, "").replace(/[^a-zA-Z0-9_]/g, "_") || "File";
@@ -46,6 +46,7 @@ const { fakeParser } = vi.hoisted(() => {
         file,
         classes: [{ name: className, startLine: 1, methods }],
         methods: [],
+        locals: [],
         imports: [],
         calls: [],
       };

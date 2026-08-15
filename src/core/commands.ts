@@ -106,6 +106,8 @@ export function cmdLs(graph: SerializedGraph, nav: NavigationState, opts: Comman
       lines.push(`  ${n.name.padEnd(24)} ${n.file}`);
     } else if (nav.level === 3 && n.kind === "method") {
       lines.push(`  ${n.name.padEnd(24)} :${n.startLine}`);
+    } else if (nav.level === 5 && n.kind === "local") {
+      lines.push(`  ${n.name.padEnd(24)} :${n.startLine} (local)`);
     } else {
       lines.push(...callLinesFor(graph, nav, config));
     }

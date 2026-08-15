@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   canonicalPathOf,
   couplingOf,
@@ -7,7 +9,6 @@ import {
   type SerializedGraph,
   type SerializedNode,
 } from "../../core";
-import { demoSources } from "../demo/demoGraph";
 import { useStore } from "../store";
 
 export function Inspector() {
@@ -44,7 +45,7 @@ export function Inspector() {
         <dl className="inspector-meta">
           <dt>arquivo</dt>
           <dd>{node.kind === "module" ? node.path : node.kind === "project" ? "—" : node.file}</dd>
-          {node.kind === "method" || node.kind === "class" ? <><dt>linha</dt><dd>{node.startLine}</dd></> : null}
+          {node.kind === "method" || node.kind === "class" || node.kind === "local" ? <><dt>linha</dt><dd>{node.startLine}</dd></> : null}
           {node.kind === "module" ? <><dt>classes</dt><dd>{classesOf(graph, node).length}</dd></> : null}
           {node.kind !== "project" ? (
             <>
@@ -64,7 +65,7 @@ export function Inspector() {
           </p>
         ) : null}
 
-        {node.kind === "method" ? <CallLists node={node} onGoto={gotoId} /> : null}
+        {node.kind === "method" || node.kind === "local" ? <CallLists node={node} onGoto={gotoId} /> : null}
 
         {isCodeNode(node) && <CodeView file={node.file} startLine={node.startLine} />}
       </div>
@@ -79,11 +80,11 @@ function classesOf(
   return graph.nodes.filter((n) => n.kind === "class" && moduleOfPath(n.file, useStore.getState().config) === node.path);
 }
 
-function isCodeNode(node: SerializedNode): node is Extract<SerializedNode, { kind: "class" | "method" }> {
-  return node.kind === "class" || node.kind === "method";
+function isCodeNode(node: SerializedNode): node is Extract<SerializedNode, { kind: "class" | "method" | "local" }> {
+  return node.kind === "class" || node.kind === "method" || node.kind === "local";
 }
 
-function CallLists({ node, onGoto }: { node: Extract<SerializedNode, { kind: "method" }>; onGoto: (id: string) => void }) {
+function CallLists({ node, onGoto }: { node: Extract<SerializedNode, { kind: "method" | "local" }>; onGoto: (id: string) => void }) {
   const graph = useStore((s) => s.graph)!;
   const out = graph.edges.filter((e) => e.type === "call" && e.from === node.id);
   const incoming = graph.edges.filter((e) => e.type === "call" && e.to === node.id);
@@ -124,9 +125,35 @@ function CallLists({ node, onGoto }: { node: Extract<SerializedNode, { kind: "me
 }
 
 function CodeView({ file, startLine }: { file: string; startLine: number }) {
-  const source = demoSources[file];
-  if (source === undefined) {
-    return <p className="placeholder code-missing">código-fonte não disponível na demo</p>;
+  const projectPath = useStore((s) => s.projectPath);
+  const [source, setSource] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSource(null);
+    setError(false);
+    if (!projectPath) return;
+    invoke<string>("file_read", { projectPath, relPath: file })
+      .then((content) => {
+        if (!cancelled) setSource(content);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPath, file]);
+
+  if (!projectPath) {
+    return <p className="placeholder code-missing">código-fonte não disponível</p>;
+  }
+  if (error) {
+    return <p className="placeholder code-missing">código-fonte não disponível</p>;
+  }
+  if (source === null) {
+    return <p className="placeholder">carregando…</p>;
   }
   const lines = source.split("\n");
   const highlight = startLine - 1;

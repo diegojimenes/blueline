@@ -51,6 +51,27 @@ describe("TypeScriptParser", () => {
     expect(symbols.methods.map((m) => m.name)).toEqual(["top", "arrow"]);
   });
 
+  it("extrai funções aninhadas como locals do método que as contém (nível 5)", () => {
+    const symbols = parser.parseFile(
+      "src/a.ts",
+      `
+      export class A {
+        go(): void {
+          const helper = () => { run(); };
+          function inner(): void {}
+          helper();
+        }
+      }
+      `,
+    );
+    expect(symbols.methods.map((m) => m.name)).toEqual([]);
+    const byName = Object.fromEntries(symbols.locals.map((l) => [l.name, l]));
+    expect(byName["helper"].owner).toBe("go");
+    expect(byName["inner"].owner).toBe("go");
+    // Chamada dentro de uma local pertence à local (range mais interno).
+    expect(symbols.calls.find((c) => c.target === "run")?.owner).toBe("helper");
+  });
+
   it("extrai imports com símbolos (incluindo alias)", () => {
     const symbols = parser.parseFile("src/a.ts", CODE);
     expect(symbols.imports).toEqual([{ from: "./b", symbols: ["B"] }]);

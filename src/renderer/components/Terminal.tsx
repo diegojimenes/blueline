@@ -26,9 +26,11 @@ export function Terminal() {
   const fitRef = useRef<FitAddon | null>(null);
   const lineStateRef = useRef<TtyLineState>(initialTtyLine());
   const ptyIdRef = useRef<number | null>(null);
+  const ptyCwdRef = useRef<string | null>(null);
   const unlistensRef = useRef<UnlistenFn[]>([]);
 
   const execCommand = useStore((s) => s.execCommand);
+  const projectPath = useStore((s) => s.projectPath);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -64,25 +66,18 @@ export function Terminal() {
     const writeOut = (data: string) => term.write(data);
 
     if (!isTauri()) {
-      // Browser (`pnpm dev`): sem backend, shell demo apenas ecoa o input.
-      term.writeln("CodeAtlas — modo browser (demo). PTY real: pnpm tauri dev.");
+      // Browser (`pnpm dev`): sem backend, o terminal apenas ecoa o input.
+      term.writeln("CodeAtlas — modo browser (sem PTY). Terminal real: pnpm tauri dev.");
       term.write(PROMPT);
     } else {
-      const cwd = useStore.getState().projectPath ?? "/";
-      invoke<number>("ptty_spawn", { cwd })
-        .then((id) => {
-          ptyIdRef.current = id;
-          listen<PtyOutputEvent>("codeatlas:pty-output", (e) => writeOut(e.payload.data)).then((u) =>
-            unlistensRef.current.push(u),
-          );
-          listen("codeatlas:pty-exit", () => {
-            term.writeln("\r\n[shell encerrado — aperte Enter para um novo prompt]");
-          }).then((u) => unlistensRef.current.push(u));
-        })
-        .catch((err) => {
-          term.writeln(`falha ao spawnar PTY: ${err}`);
-          term.write(PROMPT);
-        });
+      // Listener único por janela; o PTY em si é (re)spawnado pelo efeito
+      // `projectPath` abaixo, para o shell nascer no diretório do projeto aberto.
+      listen<PtyOutputEvent>("codeatlas:pty-output", (e) => writeOut(e.payload.data)).then((u) =>
+        unlistensRef.current.push(u),
+      );
+      listen("codeatlas:pty-exit", () => {
+        term.writeln("\r\n[shell encerrado — aperte Enter para um novo prompt]");
+      }).then((u) => unlistensRef.current.push(u));
     }
 
     const handleCommand = (input: string) => {
@@ -170,6 +165,29 @@ export function Terminal() {
     };
   }, [execCommand]);
 
+  // O shell nasce no diretório do projeto: ao abrir um repo (ou trocar), o PTY
+  // antigo é encerrado e um novo sobe com cwd = raiz do projeto.
+  useEffect(() => {
+    if (!isTauri()) return;
+    const term = termRef.current;
+    if (!term) return;
+    const target = projectPath ?? "/";
+    if (ptyCwdRef.current === target) return;
+    if (ptyIdRef.current != null) {
+      invoke("ptty_kill", { id: ptyIdRef.current }).catch(() => {});
+      ptyIdRef.current = null;
+    }
+    ptyCwdRef.current = target;
+    term.writeln(`\r\n\x1b[36m● cwd: ${target}\x1b[0m\r\n`);
+    invoke<number>("ptty_spawn", { cwd: target })
+      .then((id) => {
+        ptyIdRef.current = id;
+      })
+      .catch((err) => {
+        term.writeln(`falha ao spawnar PTY: ${err}`);
+      });
+  }, [projectPath]);
+
   return (
     <section className="panel panel-terminal" aria-label="Terminal">
       <div className="panel-title">
@@ -184,7 +202,7 @@ export function Terminal() {
 /** Shell de demonstração (browser): ecoa o input e avisa que não há PTY. */
 function demoShell(term: XTerm, data: string) {
   if (data === "\r") {
-    term.write("\r\n[shell demo: PTY real disponível em pnpm tauri dev]\r\n");
+    term.write("\r\n[terminal real: PTY disponível em pnpm tauri dev]\r\n");
     term.write(PROMPT);
   } else {
     term.write(data);
