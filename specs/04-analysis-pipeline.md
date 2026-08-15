@@ -33,19 +33,21 @@ interface FileSymbols {
 ### 2. Parse (tree-sitter WASM)
 - `parseFile` produz `FileSymbols` por arquivo.
 - Regras mínimas no MVP:
-  - **classes**: `class` + membros `method` (métodos `public/protected/private` e `static`).
+  - **classes**: `class` + membros `method_definition` dentro de `class_body` (métodos `public/protected/private` e `static`). Construtores são ignorados no MVP.
   - **funções**: `function`, arrow functions nomeadas (`export const foo = () => …`), `async`.
-  - **imports**: `import ... from '...'`, `export ... from '...'`.
-  - **calls**: chamada de método identificada por `memberExpression` ou identificador; o alvo é resolvido por
-    nome dentro do arquivo primeiro, depois no índice global (heurística por nome único — documentar limitações).
+  - **imports**: `import ... from '...'`, `export ... from '...'` (re-exports), com símbolos listados.
+  - **calls**: chamada de método identificada por `call_expression`; o alvo é resolvido por nome dentro do arquivo primeiro, depois no índice global (heurística por nome único — documentar limitações).
+  - **`.js`/`.jsx`**: parseados com as gramáticas TS/TSX (superset) no MVP — sem gramática JS separada.
+  - **`new X(...)` e chamadas a built-ins** (`slice`, `toUpperCase`, …) **não** geram aresta de chamada no MVP (registrados como `unresolved`/ignorados).
 
 ### 3. Resolução (linking)
 - Constrói `CodeGraph` (D6):
   - `member` arestas classe→método.
   - `import` arestas file→file.
   - `call` arestas method→method (quando o alvo resolve; senão, registra como `unresolved`).
-  - `ModuleNode` por convenção: primeiro segmento de caminho relevante (ex.: `src/pedidos/...` → módulo `pedidos`),
-    com regra configurável em `codeatlas.json`.
+  - `MemberNode` é o `ClassNode` do arquivo; `ModuleNode` é derivado do **diretório relativo** do arquivo após
+    remover prefixos de raiz (`src`, `lib`, `app` — configurável em `codeatlas.json`). Ex.: `src/helpers/format.ts`
+    → módulo `helpers`; `src/root.ts` → `<root>`.
 - Deriva arestas `moduleEdge` por agregação.
 
 ### 4. Atualização incremental

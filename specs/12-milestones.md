@@ -8,10 +8,22 @@
 - `src/core` vazio com `events.ts` e `index.ts`; primeiras fixtures (`empty/`).
 - **Done:** `pnpm test`, `pnpm lint`, `pnpm typecheck` verdes; janela Tauri abre com layout de 4 painéis vazios.
 
-## M1 — Parse & modelo
+## M1 — Parse & modelo ✅
 - `Parser` (tree-sitter WASM) p/ TS/JS; walk; `CodeGraph`; resolução de imports/calls (heurística);
   `toJSON` canônico; golden para `basic/` e `messy/`.
-- **Done:** núcleo cobre >= 60%; goldens de fixtures; parse inicial de `basic/` correto.
+- Implementado:
+  - `walk.ts`, `path.ts` (posix), `parse/` (`ts-parser` sobre web-tree-sitter + gramática TS/TSX),
+    `analyze/build.ts` (`buildGraph` + `moduleOfPath` + `resolveImportTarget`),
+    `serialize.ts` (`toJSON` canônico + `aggregateModuleEdges` com peso).
+  - Fixtures `basic/` e `messy/`; goldens em snapshot; teste de determinismo/ordenação.
+- **Done:** 35 testes verdes; núcleo cobre ~92% (stmts/lines), branches ~79%, meta era >= 60%;
+  `pnpm test:coverage`, `pnpm typecheck`, `pnpm lint`, `cargo test` verdes.
+
+### Decisões refinadas no M1
+- `new X(...)`, chamadas a built-ins (`slice`, `toUpperCase`, …) e `constructor` não geram arestas no MVP
+  (registram-se como `unresolved`/são ignorados) — ver `04-analysis-pipeline.md`.
+- `.js`/`.jsx` são parseados com as gramáticas TS/TSX (superset); gramática JS separada fica para backlog.
+- Módulo = diretório relativo após remover prefixos de raiz (`src`/`lib`/`app`).
 
 ## M2 — Grafo & zoom semântico
 - `layout.ts` por nível; renderer canvas com culling; duplo clique entra; `up` sai; portais; trail/visited.

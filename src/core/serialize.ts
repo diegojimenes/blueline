@@ -1,0 +1,85 @@
+import type { CodeGraph, Edge, EdgeId, EdgeType, Node, NodeId, ProjectConfig } from "./model/types";
+import { moduleOfPath } from "./analyze/build";
+
+/** Formato canônico de saída do CodeGraph (specs/04-analysis-pipeline.md). */
+export interface SerializedNode {
+  id: NodeId;
+  kind: Node["kind"];
+  name: string;
+  file?: string;
+  path?: string;
+  startLine?: number;
+  owner?: NodeId;
+}
+
+export interface SerializedEdge {
+  id: EdgeId;
+  type: EdgeType;
+  from: NodeId;
+  to: NodeId;
+  meta?: Edge["meta"];
+}
+
+export interface SerializedGraph {
+  projectRoot: string;
+  revision: number;
+  nodes: SerializedNode[];
+  edges: SerializedEdge[];
+  moduleEdges: SerializedEdge[];
+}
+
+export function serializeNode(node: Node): SerializedNode {
+  const base = { id: node.id, kind: node.kind, name: node.name };
+  switch (node.kind) {
+    case "project":
+      return base;
+    case "module":
+      return { ...base, path: node.path };
+    case "class":
+      return { ...base, file: node.file, startLine: node.startLine };
+    case "method":
+      return { ...base, file: node.file, startLine: node.startLine, owner: node.owner };
+  }
+}
+
+/** Ordenação canônica por ID — grafos golden estáveis. */
+function sortById<T extends { id: string }>(items: T[]): T[] {
+  return items.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/**
+ * Arestas de módulo derivadas por agregação (specs/03-data-model.md).
+ * Sempre recalculadas a partir das arestas primárias — nunca fonte primária.
+ */
+export function aggregateModuleEdges(graph: CodeGraph, config: ProjectConfig = {}): Edge[] {
+  const weight = new Map<string, number>();
+  for (const edge of graph.edges.values()) {
+    if (edge.type === "moduleEdge") continue;
+    const fromModule = moduleIdOf(graph.nodes.get(edge.from), config);
+    const toModule = moduleIdOf(graph.nodes.get(edge.to), config);
+    if (!fromModule || !toModule || fromModule === toModule) continue;
+    const key = `${fromModule}\u0000${toModule}`;
+    weight.set(key, (weight.get(key) ?? 0) + 1);
+  }
+  return [...weight.entries()].map(([key, w]) => {
+    const [from, to] = key.split("\u0000");
+    return { id: `moduleEdge:${from}:${to}`, type: "moduleEdge", from, to, meta: { weight: w } };
+  });
+}
+
+function moduleIdOf(node: Node | undefined, config: ProjectConfig): NodeId | null {
+  if (!node) return null;
+  if (node.kind === "module") return node.id;
+  if (node.kind === "project") return "module:<root>";
+  return `module:${moduleOfPath(node.file, config)}`;
+}
+
+export function toJSON(graph: CodeGraph, config: ProjectConfig = {}): SerializedGraph {
+  return {
+    projectRoot: graph.projectRoot,
+    revision: graph.revision,
+    nodes: sortById([...graph.nodes.values()].map(serializeNode)),
+    edges: sortById([...graph.edges.values()]),
+    moduleEdges: sortById(aggregateModuleEdges(graph, config)),
+  };
+}

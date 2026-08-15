@@ -1,0 +1,372 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`toJSON > produz grafo golden estável (fixture basic) 1`] = `
+{
+  "edges": [
+    {
+      "from": "method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start",
+      "id": "call:method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start:method:src/auth/AuthService.ts:class:src/auth/AuthService.ts:AuthService:login",
+      "meta": {
+        "line": 7,
+      },
+      "to": "method:src/auth/AuthService.ts:class:src/auth/AuthService.ts:AuthService:login",
+      "type": "call",
+    },
+    {
+      "from": "method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start",
+      "id": "call:method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start:method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
+      "meta": {
+        "line": 9,
+      },
+      "to": "method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
+      "type": "call",
+    },
+    {
+      "from": "method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
+      "id": "call:method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido:method:src/pedidos/Pedido.ts:class:src/pedidos/Pedido.ts:Pedido:calcularTotal",
+      "meta": {
+        "line": 6,
+      },
+      "to": "method:src/pedidos/Pedido.ts:class:src/pedidos/Pedido.ts:Pedido:calcularTotal",
+      "type": "call",
+    },
+    {
+      "from": "class:src/gateway/Gateway.ts:Gateway",
+      "id": "import:class:src/gateway/Gateway.ts:Gateway:class:src/auth/AuthService.ts:AuthService",
+      "meta": {
+        "symbol": "AuthService",
+      },
+      "to": "class:src/auth/AuthService.ts:AuthService",
+      "type": "import",
+    },
+    {
+      "from": "class:src/gateway/Gateway.ts:Gateway",
+      "id": "import:class:src/gateway/Gateway.ts:Gateway:class:src/pedidos/PedidoService.ts:PedidoService",
+      "meta": {
+        "symbol": "PedidoService",
+      },
+      "to": "class:src/pedidos/PedidoService.ts:PedidoService",
+      "type": "import",
+    },
+    {
+      "from": "class:src/pedidos/PedidoService.ts:PedidoService",
+      "id": "import:class:src/pedidos/PedidoService.ts:PedidoService:class:src/pedidos/Pedido.ts:Pedido",
+      "meta": {
+        "symbol": "Pedido",
+      },
+      "to": "class:src/pedidos/Pedido.ts:Pedido",
+      "type": "import",
+    },
+    {
+      "from": "class:src/auth/AuthService.ts:AuthService",
+      "id": "member:class:src/auth/AuthService.ts:AuthService:method:src/auth/AuthService.ts:class:src/auth/AuthService.ts:AuthService:login",
+      "to": "method:src/auth/AuthService.ts:class:src/auth/AuthService.ts:AuthService:login",
+      "type": "member",
+    },
+    {
+      "from": "class:src/gateway/Gateway.ts:Gateway",
+      "id": "member:class:src/gateway/Gateway.ts:Gateway:method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start",
+      "to": "method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start",
+      "type": "member",
+    },
+    {
+      "from": "class:src/pedidos/Pedido.ts:Pedido",
+      "id": "member:class:src/pedidos/Pedido.ts:Pedido:method:src/pedidos/Pedido.ts:class:src/pedidos/Pedido.ts:Pedido:calcularTotal",
+      "to": "method:src/pedidos/Pedido.ts:class:src/pedidos/Pedido.ts:Pedido:calcularTotal",
+      "type": "member",
+    },
+    {
+      "from": "class:src/pedidos/PedidoService.ts:PedidoService",
+      "id": "member:class:src/pedidos/PedidoService.ts:PedidoService:method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
+      "to": "method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
+      "type": "member",
+    },
+  ],
+  "moduleEdges": [
+    {
+      "from": "module:gateway",
+      "id": "moduleEdge:module:gateway:module:auth",
+      "meta": {
+        "weight": 2,
+      },
+      "to": "module:auth",
+      "type": "moduleEdge",
+    },
+    {
+      "from": "module:gateway",
+      "id": "moduleEdge:module:gateway:module:pedidos",
+      "meta": {
+        "weight": 2,
+      },
+      "to": "module:pedidos",
+      "type": "moduleEdge",
+    },
+  ],
+  "nodes": [
+    {
+      "file": "src/auth/AuthService.ts",
+      "id": "class:src/auth/AuthService.ts:AuthService",
+      "kind": "class",
+      "name": "AuthService",
+      "startLine": 1,
+    },
+    {
+      "file": "src/gateway/Gateway.ts",
+      "id": "class:src/gateway/Gateway.ts:Gateway",
+      "kind": "class",
+      "name": "Gateway",
+      "startLine": 4,
+    },
+    {
+      "file": "src/pedidos/Pedido.ts",
+      "id": "class:src/pedidos/Pedido.ts:Pedido",
+      "kind": "class",
+      "name": "Pedido",
+      "startLine": 1,
+    },
+    {
+      "file": "src/pedidos/PedidoService.ts",
+      "id": "class:src/pedidos/PedidoService.ts:PedidoService",
+      "kind": "class",
+      "name": "PedidoService",
+      "startLine": 3,
+    },
+    {
+      "file": "src/auth/AuthService.ts",
+      "id": "method:src/auth/AuthService.ts:class:src/auth/AuthService.ts:AuthService:login",
+      "kind": "method",
+      "name": "login",
+      "owner": "class:src/auth/AuthService.ts:AuthService",
+      "startLine": 2,
+    },
+    {
+      "file": "src/gateway/Gateway.ts",
+      "id": "method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start",
+      "kind": "method",
+      "name": "start",
+      "owner": "class:src/gateway/Gateway.ts:Gateway",
+      "startLine": 5,
+    },
+    {
+      "file": "src/pedidos/Pedido.ts",
+      "id": "method:src/pedidos/Pedido.ts:class:src/pedidos/Pedido.ts:Pedido:calcularTotal",
+      "kind": "method",
+      "name": "calcularTotal",
+      "owner": "class:src/pedidos/Pedido.ts:Pedido",
+      "startLine": 4,
+    },
+    {
+      "file": "src/pedidos/PedidoService.ts",
+      "id": "method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
+      "kind": "method",
+      "name": "criarPedido",
+      "owner": "class:src/pedidos/PedidoService.ts:PedidoService",
+      "startLine": 4,
+    },
+    {
+      "id": "module:auth",
+      "kind": "module",
+      "name": "auth",
+      "path": "auth",
+    },
+    {
+      "id": "module:gateway",
+      "kind": "module",
+      "name": "gateway",
+      "path": "gateway",
+    },
+    {
+      "id": "module:pedidos",
+      "kind": "module",
+      "name": "pedidos",
+      "path": "pedidos",
+    },
+    {
+      "id": "project",
+      "kind": "project",
+      "name": "basic",
+    },
+  ],
+  "projectRoot": "/home/jo/Documentos/code/fixtures/basic",
+  "revision": 0,
+}
+`;
+
+exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
+{
+  "edges": [
+    {
+      "from": "method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
+      "id": "call:method:src/helpers/format.ts:class:src/helpers/format.ts:format:title:method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "meta": {
+        "line": 4,
+      },
+      "to": "method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "type": "call",
+    },
+    {
+      "from": "method:src/main.ts:class:src/main.ts:main:run",
+      "id": "call:method:src/main.ts:class:src/main.ts:main:run:method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
+      "meta": {
+        "line": 6,
+      },
+      "to": "method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
+      "type": "call",
+    },
+    {
+      "from": "method:src/main.ts:class:src/main.ts:main:run",
+      "id": "call:method:src/main.ts:class:src/main.ts:main:run:method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "meta": {
+        "line": 5,
+      },
+      "to": "method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "type": "call",
+    },
+    {
+      "from": "class:src/helpers/format.ts:format",
+      "id": "import:class:src/helpers/format.ts:format:class:src/utils.ts:utils",
+      "meta": {
+        "symbol": "upper",
+      },
+      "to": "class:src/utils.ts:utils",
+      "type": "import",
+    },
+    {
+      "from": "class:src/main.ts:main",
+      "id": "import:class:src/main.ts:main:class:src/helpers/format.ts:format",
+      "meta": {
+        "symbol": undefined,
+      },
+      "to": "class:src/helpers/format.ts:format",
+      "type": "import",
+    },
+    {
+      "from": "class:src/main.ts:main",
+      "id": "import:class:src/main.ts:main:class:src/utils.ts:utils",
+      "meta": {
+        "symbol": "upper",
+      },
+      "to": "class:src/utils.ts:utils",
+      "type": "import",
+    },
+    {
+      "from": "class:src/helpers/format.ts:format",
+      "id": "member:class:src/helpers/format.ts:format:method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
+      "to": "method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
+      "type": "member",
+    },
+    {
+      "from": "class:src/main.ts:main",
+      "id": "member:class:src/main.ts:main:method:src/main.ts:class:src/main.ts:main:run",
+      "to": "method:src/main.ts:class:src/main.ts:main:run",
+      "type": "member",
+    },
+    {
+      "from": "class:src/utils.ts:utils",
+      "id": "member:class:src/utils.ts:utils:method:src/utils.ts:class:src/utils.ts:utils:lower",
+      "to": "method:src/utils.ts:class:src/utils.ts:utils:lower",
+      "type": "member",
+    },
+    {
+      "from": "class:src/utils.ts:utils",
+      "id": "member:class:src/utils.ts:utils:method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "to": "method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "type": "member",
+    },
+  ],
+  "moduleEdges": [
+    {
+      "from": "module:<root>",
+      "id": "moduleEdge:module:<root>:module:helpers",
+      "meta": {
+        "weight": 2,
+      },
+      "to": "module:helpers",
+      "type": "moduleEdge",
+    },
+    {
+      "from": "module:helpers",
+      "id": "moduleEdge:module:helpers:module:<root>",
+      "meta": {
+        "weight": 2,
+      },
+      "to": "module:<root>",
+      "type": "moduleEdge",
+    },
+  ],
+  "nodes": [
+    {
+      "file": "src/helpers/format.ts",
+      "id": "class:src/helpers/format.ts:format",
+      "kind": "class",
+      "name": "format",
+      "startLine": 1,
+    },
+    {
+      "file": "src/main.ts",
+      "id": "class:src/main.ts:main",
+      "kind": "class",
+      "name": "main",
+      "startLine": 1,
+    },
+    {
+      "file": "src/utils.ts",
+      "id": "class:src/utils.ts:utils",
+      "kind": "class",
+      "name": "utils",
+      "startLine": 1,
+    },
+    {
+      "file": "src/helpers/format.ts",
+      "id": "method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
+      "kind": "method",
+      "name": "title",
+      "owner": "class:src/helpers/format.ts:format",
+      "startLine": 3,
+    },
+    {
+      "file": "src/main.ts",
+      "id": "method:src/main.ts:class:src/main.ts:main:run",
+      "kind": "method",
+      "name": "run",
+      "owner": "class:src/main.ts:main",
+      "startLine": 4,
+    },
+    {
+      "file": "src/utils.ts",
+      "id": "method:src/utils.ts:class:src/utils.ts:utils:lower",
+      "kind": "method",
+      "name": "lower",
+      "owner": "class:src/utils.ts:utils",
+      "startLine": 5,
+    },
+    {
+      "file": "src/utils.ts",
+      "id": "method:src/utils.ts:class:src/utils.ts:utils:upper",
+      "kind": "method",
+      "name": "upper",
+      "owner": "class:src/utils.ts:utils",
+      "startLine": 1,
+    },
+    {
+      "id": "module:<root>",
+      "kind": "module",
+      "name": "messy",
+      "path": "<root>",
+    },
+    {
+      "id": "module:helpers",
+      "kind": "module",
+      "name": "helpers",
+      "path": "helpers",
+    },
+    {
+      "id": "project",
+      "kind": "project",
+      "name": "messy",
+    },
+  ],
+  "projectRoot": "/home/jo/Documentos/code/fixtures/messy",
+  "revision": 0,
+}
+`;

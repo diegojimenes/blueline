@@ -31,7 +31,7 @@ export interface Edge {
   type: EdgeType;
   from: NodeId;
   to: NodeId;
-  meta?: { line?: number; symbol?: string };
+  meta?: { line?: number; symbol?: string; weight?: number };
 }
 
 export interface CodeGraph {
@@ -84,4 +84,6 @@ export interface ProjectConfig {
   domainPaths?: Record<string, string>;
   ignore?: string[];
   moduleDepth?: number;
+  /** Prefixos de diretório raiz ignorados ao agrupar módulos (padrão: `["src", "lib", "app"]`). */
+  rootPrefixes?: string[];
 }

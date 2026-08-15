@@ -41,7 +41,9 @@ Nome de trabalho: **CodeAtlas**.
 | Lint/typecheck | `pnpm lint` / `pnpm typecheck` |
 | Build de produção | `pnpm build` |
 
-> Marco M0 concluído (janela com layout de 4 painéis + status bar). Próximo: M1 (parse & modelo) — ver `specs/12-milestones.md`.
+> Marco M0 concluído (janela com layout de 4 painéis + status bar) e **M1 concluído** (parse tree-sitter TS/JS,
+> modelo de grafo, resolução de imports/calls, `toJSON` canônico, goldens; 35 testes + cobertura ~92%).
+> Próximo: M2 (grafo & zoom semântico) — ver `specs/12-milestones.md`.
 
 ## Checklist ao trabalhar aqui
 
