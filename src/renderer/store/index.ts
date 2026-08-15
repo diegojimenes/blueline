@@ -1,22 +1,33 @@
 import { create } from "zustand";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
+  applyFileRemovals,
+  applyFiles,
+  buildGraph,
+  cacheFrom,
   cmdLens,
   cmdUp,
+  fromJSON,
   gotoNode,
   navigationToNode,
   runCommand,
+  toJSON,
   upNavigation,
+  type BuildFileInput,
   type CommandResult,
   type HistoryEntry,
   type LensId,
   type LayoutMap,
+  type ModelDelta,
   type NavigationState,
   type NodeId,
   type ProjectConfig,
   type SerializedGraph,
+  type SymbolCache,
 } from "../../core";
 import { demoGraph } from "../demo/demoGraph";
 import { demoConfig } from "../demo/demoConfig";
+import { getParser } from "../parser";
 
 export type Theme = "dark" | "light";
 
@@ -25,6 +36,13 @@ export interface LogLine {
   text: string;
   /** Quando definido, a linha é clicável e volta ao nó. */
   target: NodeId | null;
+}
+
+export type WatcherState = "off" | "active" | "updated";
+
+interface ProjectFile {
+  path: string;
+  content: string;
 }
 
 const LENS_ORDER: LensId[] = ["layers", "coupling", "domain"];
@@ -42,6 +60,13 @@ interface AppState extends NavigationState {
   /** Índice do cursor no histórico de foco (Alt+← / Alt+→). */
   historyIndex: number;
   log: LogLine[];
+  /** Símbolos parseados por arquivo — base do re-parse incremental (M5). */
+  symbols: SymbolCache;
+  /** Estado do file watcher para a status bar (M5). */
+  watcherState: WatcherState;
+  watcherTime: string | null;
+  /** Nós a pulsar após a última mudança externa (M5). */
+  flash: { ids: NodeId[]; at: number } | null;
 
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -50,9 +75,15 @@ interface AppState extends NavigationState {
   setSelected: (selected: NodeId | null) => void;
   setLayout: (layout: LayoutMap | null) => void;
   loadDemo: () => void;
+  /** Abre um diretório real: walk + parse inicial + watcher (M5). */
+  openProject: (path: string) => Promise<void>;
+  /** Re-parse incremental de um batch de arquivos tocados pelo watcher (M5). */
+  applyExternalChanges: (paths: string[]) => Promise<void>;
+  startWatcher: () => Promise<void>;
+  stopWatcher: () => void;
   /** Executa um comando determinístico e devolve o resultado (terminal real). */
   execCommand: (command: string) => CommandResult;
-  /** Executa um comando do terminal (`goto`, `up`, `ls`, `lens`, `help`, `clear`). */
+  /** Executa um comando do terminal (`goto`, `up`, `ls`, `lens`, `help`, `clear`, `open`). */
   dispatch: (command: string) => void;
   /** Entra no nó (duplo clique no canvas) — mesmo caminho de histórico do `goto`. */
   enterNode: (id: NodeId) => void;
@@ -114,6 +145,10 @@ export const useStore = create<AppState>()((set, get) => {
     history: [],
     historyIndex: 0,
     log: [],
+    symbols: new Map(),
+    watcherState: "off",
+    watcherTime: null,
+    flash: null,
 
     setTheme: (theme) => set({ theme }),
     toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -136,7 +171,79 @@ export const useStore = create<AppState>()((set, get) => {
       history: [],
       historyIndex: 0,
       log: [],
+      symbols: new Map(),
+      watcherState: "off",
+      watcherTime: null,
+      flash: null,
     }),
+
+  openProject: async (path) => {
+    const parser = await getParser();
+    const files = await invoke<ProjectFile[]>("read_project", { projectPath: path });
+    const inputs: BuildFileInput[] = [];
+    for (const f of files) {
+      if (!parser.supports(f.path)) continue;
+      inputs.push({ path: f.path, symbols: parser.parseFile(f.path, f.content) });
+    }
+    const graph = buildGraph(inputs, path, {}).graph;
+    set({
+      graph: toJSON(graph, {}),
+      symbols: cacheFrom(inputs),
+      config: {},
+      projectOpen: true,
+      projectPath: path,
+      ...initialNavigation,
+      history: [],
+      historyIndex: 0,
+      flash: null,
+      watcherTime: null,
+      log: [...get().log, { id: nextLogId++, text: `projeto aberto: ${path} (${inputs.length} arquivos)`, target: null }],
+    });
+    void get().startWatcher();
+  },
+
+  applyExternalChanges: async (paths) => {
+    const s = get();
+    if (!s.projectPath || !s.graph || !isTauri()) return;
+    const parser = await getParser();
+    const root = s.projectPath;
+    const changed: BuildFileInput[] = [];
+    const removed: string[] = [];
+    for (const rel of paths) {
+      try {
+        const content = await invoke<string>("file_read", { projectPath: root, relPath: rel });
+        if (parser.supports(rel)) changed.push({ path: rel, symbols: parser.parseFile(rel, content) });
+      } catch {
+        removed.push(rel);
+      }
+    }
+    const cur = get();
+    if (!cur.graph) return;
+    const before = fromJSON(cur.graph);
+    const result =
+      removed.length > 0 && changed.length === 0
+        ? applyFileRemovals(before, cur.symbols, removed, root, cur.config, "parseIncremental")
+        : applyFiles(before, cur.symbols, changed, root, cur.config, "parseIncremental");
+    if (result.graph === before) return; // no-op: touch sem mudança real
+    applyDelta(set, cur, result.delta, result.graph);
+  },
+
+  startWatcher: async () => {
+    const s = get();
+    if (!isTauri() || !s.projectPath) return;
+    try {
+      await invoke("watch_start", { projectPath: s.projectPath });
+      set({ watcherState: "active" });
+    } catch {
+      // Já ativo ou backend indisponível — demo segue sem live update.
+    }
+  },
+
+  stopWatcher: () => {
+    if (!isTauri()) return;
+    void invoke("watch_stop").catch(() => {});
+    set({ watcherState: "off" });
+  },
 
   /** Executa um comando determinístico e devolve o resultado completo (terminal real usa isto). */
   execCommand: (command) => {
@@ -147,11 +254,35 @@ export const useStore = create<AppState>()((set, get) => {
       set({ log: [] });
       return result;
     }
+    if (trimmed.startsWith("open ")) {
+      const path = trimmed.slice(5).trim();
+      if (!path) {
+        const result: CommandResult = { nav: s, entries: [], lines: ["uso: open <diretório>"], target: null };
+        apply(result, trimmed);
+        return result;
+      }
+      if (!isTauri()) {
+        const result: CommandResult = {
+          nav: s,
+          entries: [],
+          lines: ["abrir projeto requer o app Tauri (pnpm tauri dev) — demo carregada"],
+          target: null,
+        };
+        apply(result, trimmed);
+        return result;
+      }
+      const result: CommandResult = { nav: s, entries: [], lines: [`abrindo ${path}…`], target: null };
+      apply(result, trimmed);
+      void get().openProject(path).catch((err) => {
+        set({ log: [...get().log, { id: nextLogId++, text: `falha ao abrir: ${String(err)}`, target: null }] });
+      });
+      return result;
+    }
     if (!s.graph) {
       const result: CommandResult = {
         nav: s,
         entries: [],
-        lines: ["nenhum projeto carregado (demo via duplo clique)"],
+        lines: ["nenhum projeto carregado (demo via duplo clique; abra um com `open <dir>`)"],
         target: null,
       };
       apply(result, trimmed);
@@ -219,6 +350,21 @@ export const useStore = create<AppState>()((set, get) => {
     },
   };
 });
+
+function applyDelta(
+  set: (partial: Partial<AppState>) => void,
+  cur: AppState,
+  delta: ModelDelta,
+  next: ReturnType<typeof fromJSON>,
+): void {
+  const affected = new Set<NodeId>([...delta.added.map((n) => n.id), ...delta.changed.map((n) => n.id)]);
+  set({
+    graph: toJSON(next, cur.config),
+    flash: affected.size > 0 ? { ids: [...affected], at: Date.now() } : null,
+    watcherState: "updated",
+    watcherTime: new Date().toLocaleTimeString(),
+  });
+}
 
 function moveToIndex(
   s: AppState,

@@ -85,3 +85,42 @@ export function toJSON(graph: CodeGraph, config: ProjectConfig = {}): Serialized
     moduleEdges: sortById(aggregateModuleEdges(graph, config)),
   };
 }
+
+/**
+ * Reconstrói um CodeGraph a partir do formato canônico (M5: o store guarda a
+ * versão serializada e precisa do modelo com Maps para o delta incremental).
+ */
+export function fromJSON(json: SerializedGraph): CodeGraph {
+  const nodes = new Map<NodeId, Node>();
+  for (const n of json.nodes) nodes.set(n.id, n as Node);
+  const edges = new Map<EdgeId, Edge>();
+  for (const e of json.edges) edges.set(e.id, e);
+  const byFile = new Map<string, NodeId[]>();
+  const byModule = new Map<NodeId, NodeId[]>();
+  const callsIn = new Map<NodeId, NodeId[]>();
+  const callsOut = new Map<NodeId, NodeId[]>();
+  for (const node of nodes.values()) {
+    if (node.kind === "class" || node.kind === "method") {
+      const list = byFile.get(node.file) ?? [];
+      list.push(node.id);
+      byFile.set(node.file, list);
+    }
+    if (node.kind === "class") {
+      const mod = `module:${moduleOfPath(node.file)}`;
+      const list = byModule.get(mod) ?? [];
+      if (!list.includes(node.id)) list.push(node.id);
+      byModule.set(mod, list);
+    }
+  }
+  for (const edge of edges.values()) {
+    if (edge.type === "call") {
+      const out = callsOut.get(edge.from) ?? [];
+      out.push(edge.to);
+      callsOut.set(edge.from, out);
+      const inn = callsIn.get(edge.to) ?? [];
+      inn.push(edge.from);
+      callsIn.set(edge.to, inn);
+    }
+  }
+  return { projectRoot: json.projectRoot, revision: json.revision, nodes, edges, indexes: { byFile, byModule, callsIn, callsOut } };
+}

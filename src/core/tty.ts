@@ -3,8 +3,8 @@
  *
  * Duas superfícies no mesmo xterm.js:
  *  - **Shell**: input vai ao PTY (backend) sem interferência.
- *  - **Comando CodeAtlas**: input começa com verbo reservado (goto|up|ls|lens|clear|help)
- *    e é processado por `core/commands`.
+ *  - **Comando CodeAtlas**: input começa com verbo reservado (goto|up|ls|lens|clear|help|open)
+ *    e é processado por `core/commands` (o `open` é assíncrono — store).
  *
  * Regra de desambiguação (spec 08): se a primeira palavra do input for verbo
  * reservado, é comando CodeAtlas; senão, vai ao PTY. `ls` é sempre comando
@@ -15,7 +15,7 @@
  * enviamos o buffer acumulado ao PTY (o shell ecoa — sem duplicar).
  */
 
-export const RESERVED_VERBS = ["goto", "up", "ls", "lens", "clear", "help"] as const;
+export const RESERVED_VERBS = ["goto", "up", "ls", "lens", "clear", "help", "open"] as const;
 
 export type ReservedVerb = (typeof RESERVED_VERBS)[number];
 

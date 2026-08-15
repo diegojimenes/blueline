@@ -51,7 +51,12 @@ Nome de trabalho: **CodeAtlas**.
 > **M4 concluído** (terminal real: `portable-pty` no backend + xterm.js; `core/tty.ts` decide comando vs shell
 > sem eco duplicado; histórico de navegação clicável; fallback demo no browser; 107 testes) — ver
 > `specs/12-milestones.md`.
-> Próximo: M5 (live updates: watcher + git diff).
+> **M5 concluído — MVP completo** (live updates: watcher `notify` com debounce + batch `files:changed`;
+> `git.rs` provider via porcelain; `core/delta.ts` + `core/incremental.ts` (re-parse só dos tocados, no-op
+> não sobe revisão); `open <dir>` no terminal com parse inicial no webview (tree-sitter WASM via `?url`);
+> pulso de nós afetados no canvas + status bar do watcher; 122 testes vitest + 8 cargo) — ver
+> `specs/12-milestones.md`.
+> Próximo: backlog pós-MVP (hooks por agente, busca fuzzy, outras linguagens).
 
 ## Checklist ao trabalhar aqui
 

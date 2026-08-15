@@ -1,10 +1,12 @@
 import { useEffect } from "react";
+import { isTauri } from "@tauri-apps/api/core";
 import { Canvas } from "./components/Canvas";
 import { Explorer } from "./components/Explorer";
 import { Inspector } from "./components/Inspector";
 import { StatusBar } from "./components/StatusBar";
 import { Terminal } from "./components/Terminal";
 import { useStore } from "./store";
+import { setupWatcher } from "./watcher";
 
 export default function App() {
   const theme = useStore((s) => s.theme);
@@ -21,6 +23,18 @@ export default function App() {
   useEffect(() => {
     if (!graph) loadDemo();
   }, [graph, loadDemo]);
+
+  // Barramento do watcher (M5): um único listener por janela.
+  useEffect(() => {
+    if (!isTauri()) return;
+    let unlisten: (() => void) | null = null;
+    setupWatcher().then((u) => {
+      unlisten = u;
+    });
+    return () => {
+      unlisten?.();
+    };
+  }, []);
 
   return (
     <div className="app">

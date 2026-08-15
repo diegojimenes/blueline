@@ -18,4 +18,6 @@ export * from "./viewport";
 export * from "./portals";
 export * from "./lenses";
 export * from "./tty";
+export * from "./delta";
+export * from "./incremental";
 export { createTypeScriptParser } from "./parse/ts-parser";

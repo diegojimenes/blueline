@@ -80,11 +80,23 @@
 > Nota: `clear` limpa a tela do xterm (não apaga histórico de navegação); abas do terminal ficam no backlog
 > (uma superfície por janela no MVP).
 
-## M5 — Live updates (MVP completo)
+## M5 — Live updates (MVP completo) ✅
 - Watcher (notify) + debounce; batch `files:changed`; re-parse incremental; `git` provider (D7); delta push;
   destaque de nós afetados; status bar do watcher.
-- **Done:** edição externa reflete no grafo em < 1 s; revert via git restaura; critérios de aceite de
-  `01-mvp-scope.md` atendidos; `pnpm test`+`cargo test`+CI verdes.
+- Implementado:
+  - Backend: `src-tauri/src/watcher.rs` (`notify`, debounce 150 ms, filtra TS/JS + ignores, batch único),
+    `src-tauri/src/git.rs` (`GitProvider` mockável + `SystemGit` por `git status --porcelain`),
+    `src-tauri/src/project.rs` (`walk_source_files`), comandos `watch_start`/`watch_stop`/`git_status`/
+    `file_read`/`read_project`.
+  - Core: `src/core/delta.ts` (`computeDelta` com comparação estrutural estável + `hasChanges`) e
+    `src/core/incremental.ts` (`SymbolCache`, `applyFiles`, `applyFileRemovals`, `cacheFrom`) — batch de
+    N arquivos vira 1 snapshot + 1 delta; no-op (touch sem mudança) não sobe revisão.
+  - Renderer: `open <dir>` no terminal (walk + parse inicial no webview via tree-sitter WASM com `?url`),
+    `applyExternalChanges` reage a `codeatlas:files-changed`, pulso de nós afetados no canvas (1,2 s),
+    status bar `watcher: ativo/atualizado`, cache de símbolos no store.
+- **Done:** editar arquivo reflete no grafo < 1 s (batch + re-parse incremental); `git revert` restaura
+  via leitura de disco; critérios de aceite de `01-mvp-scope.md` atendidos; 8 testes cargo + 122 testes
+  vitest + typecheck/lint/build verdes.
 
 ## Backlog pós-MVP (fora do escopo, prioridade relativa)
 

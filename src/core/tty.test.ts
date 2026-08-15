@@ -49,6 +49,7 @@ describe("tty · desambiguação comando vs shell (specs/08-terminal.md)", () =>
     expect(run("lens coupling\r")).toContainEqual({ kind: "command", input: "lens coupling" });
     expect(run("help\r")).toContainEqual({ kind: "command", input: "help" });
     expect(run("clear\r")).toContainEqual({ kind: "command", input: "clear" });
+    expect(run("open ./projeto\r")).toContainEqual({ kind: "command", input: "open ./projeto" });
   });
 
   it("linha só com prefixo de verbo vai ao PTY (ex.: 'l')", () => {

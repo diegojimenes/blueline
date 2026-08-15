@@ -6,12 +6,34 @@
 ## Fluxo
 
 ```
-Rust (notify) ── files:changed (batch) ──▶ webview ──▶ worker (core)
-                                                          ├─ re-parse só arquivos tocados
-                                                          ├─ git check (confirmar mudança real)
-                                                          ├─ applyDelta → diff → model:changed
+Rust (notify) ── files:changed (batch) ──▶ webview ──▶ core
+                                                          ├─ re-parse só arquivos tocados (cache de símbolos)
+                                                          ├─ confirmação: conteúdo igual → delta vazio
+                                                          ├─ applyFiles → computeDelta → model:changed
                                                           └─ push ao store → canvas/inspector/árvore
 ```
+
+## Implementado (M5)
+
+- **Watcher (Rust)**: `src-tauri/src/watcher.rs` (crate `notify`), `watch_start`/`watch_stop`.
+  Debounce de 150 ms agrega rajadas num único batch; filtra `.ts/.tsx/.js/.jsx` e ignora
+  `node_modules`, `.git`, `.next`, `dist`, `build`, `target`, `coverage`.
+- **Git (Rust)**: `src-tauri/src/git.rs` — `GitProvider` (mockável) + `SystemGit`; `git_status`
+  usa `git status --porcelain --untracked-files=all` (M/A/D/R/??). Fora de repo, retorna vazio.
+- **Conteúdo**: comandos `file_read(projectPath, relPath)` e `read_project(projectPath)`.
+- **Incremental (core)**: `src/core/delta.ts` (`computeDelta` + `hasChanges`) e
+  `src/core/incremental.ts` (`SymbolCache`, `applyFiles`, `applyFileRemovals`, `cacheFrom`).
+  Re-parse apenas dos arquivos tocados; IDs estáveis garantem que o resto não muda (D6).
+- **Store/UI**: `openProject` (walk + parse inicial via `open <dir>` no terminal) e
+  `applyExternalChanges` reagem ao batch; nós afetados pulsiam no canvas (~1,2 s);
+  status bar mostra `watcher: ativo` / `atualizado HH:MM:SS`.
+
+> **Decisão de implementação**: a confirmação de "mudança real" usa o **próprio re-parse** como
+> fonte — conteúdo igual produz símbolos iguais → `computeDelta` vazio → sem render (garantia 3).
+> Lemos o conteúdo do **disco** (não `git diff`): um `git checkout`/`revert` dispara o ciclo e
+> restaura o grafo naturalmente (critério 5). `git_status` alimenta a filtragem/status bar;
+> o re-parse roda no webview (worker fica como otimização futura).
+
 
 ### 1. Watcher (backend)
 - crate `notify`, observa todo o diretório do projeto.

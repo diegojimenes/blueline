@@ -174,7 +174,7 @@ export function Terminal() {
     <section className="panel panel-terminal" aria-label="Terminal">
       <div className="panel-title">
         <span>Terminal</span>
-        <span className="terminal-hint">shell + comandos: goto · up · ls · lens · clear · help</span>
+        <span className="terminal-hint">shell + comandos: open · goto · up · ls · lens · clear · help</span>
       </div>
       <div className="panel-body xterm-wrap" ref={containerRef} />
     </section>

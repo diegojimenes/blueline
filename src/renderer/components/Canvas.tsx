@@ -21,6 +21,8 @@ import { useStore } from "../store";
 
 const NODE_RADIUS = 8;
 const PORTAL_RADIUS = 14;
+/** Duração do pulso dos nós afetados por mudança externa (M5). */
+const FLASH_MS = 1200;
 
 interface CtxState {
   positions: LayoutMap;
@@ -108,6 +110,17 @@ export function Canvas() {
 
     const visible = new Set(cull(positions, viewport));
 
+    // Nós afetados pela última mudança externa pulsiam por ~1,2 s (M5).
+    let flashIds: Set<NodeId> | null = null;
+    let flashT = 0;
+    if (s.flash) {
+      const elapsed = Date.now() - s.flash.at;
+      if (elapsed < FLASH_MS) {
+        flashIds = new Set(s.flash.ids);
+        flashT = elapsed / FLASH_MS;
+      }
+    }
+
     const nodes = visibleNodes(s.graph, { level: s.level, focus: s.focus }, s.config);
     if (s.level === 1) {
       drawLensGroups(ctx, groupsFor(nodes, s.lens, s.config), positions, visible);
@@ -119,6 +132,8 @@ export function Canvas() {
       visited: s.visited,
       lens: s.lens,
       config: s.config,
+      flash: flashIds,
+      flashT,
     });
     // Portais por cima: ficam legíveis na borda, sem "esconder" sob os nós.
     drawPortals(ctx, portals, visible);
@@ -382,6 +397,8 @@ function drawNodes(
     visited: Set<NodeId>;
     lens: LensId;
     config: Parameters<typeof colorKey>[2];
+    flash: Set<NodeId> | null;
+    flashT: number;
   },
 ) {
   const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
@@ -394,6 +411,8 @@ function drawNodes(
       isSelected: id === state.selected,
       isVisited: state.visited.has(id),
       color: lensColor(colorKey(node, state.lens, state.config, graph)),
+      flash: state.flash?.has(id) ?? false,
+      flashT: state.flashT,
     });
   }
 }
@@ -402,7 +421,7 @@ function drawNode(
   ctx: CanvasRenderingContext2D,
   node: SerializedNode,
   rect: Rect,
-  state: { isFocus: boolean; isSelected: boolean; isVisited: boolean; color: string },
+  state: { isFocus: boolean; isSelected: boolean; isVisited: boolean; color: string; flash: boolean; flashT: number },
 ) {
   const kind = node.kind;
   ctx.save();
@@ -422,6 +441,14 @@ function drawNode(
   if (state.isSelected && !state.isFocus) {
     ctx.strokeStyle = withAlpha(css("--accent"), 0.6);
     ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+
+  // Pulo da mudança externa (M5): anel que esvanece.
+  if (state.flash) {
+    ctx.strokeStyle = withAlpha(css("--accent"), 0.85 * (1 - state.flashT));
+    ctx.lineWidth = 4;
+    roundRect(ctx, rect.x, rect.y, rect.width, rect.height, NODE_RADIUS);
     ctx.stroke();
   }
 
