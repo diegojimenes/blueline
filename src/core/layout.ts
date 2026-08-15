@@ -22,6 +22,30 @@ export interface Rect {
 
 export type LayoutMap = Map<NodeId, Rect>;
 
+/**
+ * Endpoints de uma aresta sobre os perímetros de origem/destino: a linha sai
+ * da borda do retângulo de origem e entra na borda do destino (não corta o
+ * interior do nó, evitando sobrepor texto).
+ */
+export function edgePorts(from: Rect, to: Rect): { fx: number; fy: number; tx: number; ty: number } {
+  const fc = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+  const tc = { x: to.x + to.width / 2, y: to.y + to.height / 2 };
+  const dx = tc.x - fc.x;
+  const dy = tc.y - fc.y;
+  if ((dx === 0 && dy === 0) || from.width <= 0 || from.height <= 0) {
+    return { fx: fc.x, fy: fc.y, tx: tc.x, ty: tc.y };
+  }
+  const sx = dx / (from.width / 2);
+  const sy = dy / (from.height / 2);
+  const k = 1 / Math.max(Math.abs(sx), Math.abs(sy));
+  return {
+    fx: fc.x + dx * k,
+    fy: fc.y + dy * k,
+    tx: tc.x - dx * k,
+    ty: tc.y - dy * k,
+  };
+}
+
 const GRID_PADDING = 16;
 const CELL_GAP = 8;
 const CELL_MAX_W = 280;

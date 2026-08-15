@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   colorKey,
   cull,
+  edgePorts,
   groupsFor,
   layoutVisible,
   portalsOf,
@@ -112,7 +113,6 @@ export function Canvas() {
       drawLensGroups(ctx, groupsFor(nodes, s.lens, s.config), positions, visible);
     }
     drawEdges(ctx, s.graph, positions, s.level, s.lens, visible);
-    drawPortals(ctx, portals, visible);
     drawNodes(ctx, s.graph, positions, visible, {
       focus: s.focus,
       selected: s.selected,
@@ -120,6 +120,8 @@ export function Canvas() {
       lens: s.lens,
       config: s.config,
     });
+    // Portais por cima: ficam legíveis na borda, sem "esconder" sob os nós.
+    drawPortals(ctx, portals, visible);
   }, []);
 
   useEffect(() => {
@@ -247,6 +249,7 @@ function drawLensGroups(
 ) {
   ctx.save();
   ctx.font = "10px var(--font-ui)";
+  const pad = 4;
   for (const group of groups) {
     let minX = Infinity;
     let minY = Infinity;
@@ -261,21 +264,32 @@ function drawLensGroups(
       maxY = Math.max(maxY, r.y + r.height);
     }
     if (minX === Infinity) continue;
-    const pad = 10;
     const box = { x: minX - pad, y: minY - pad, width: maxX - minX + pad * 2, height: maxY - minY + pad * 2 };
     const color = lensColor(group.id);
-    roundRect(ctx, box.x, box.y, box.width, box.height, 14);
-    ctx.fillStyle = withAlpha(color, 0.06);
+    roundRect(ctx, box.x, box.y, box.width, box.height, 12);
+    ctx.fillStyle = withAlpha(color, 0.05);
     ctx.fill();
-    ctx.strokeStyle = withAlpha(color, 0.35);
+    ctx.strokeStyle = withAlpha(color, 0.4);
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
+
+    // Rótulo como chip na borda superior (não invade os nós nem a célula de cima).
+    const label = group.label;
+    const labelW = ctx.measureText(label).width + 12;
+    const chipX = box.x + 6;
+    const chipY = box.y - 8;
+    roundRect(ctx, chipX, chipY, labelW, 15, 4);
+    ctx.fillStyle = withAlpha(color, 0.14);
+    ctx.fill();
+    ctx.strokeStyle = withAlpha(color, 0.7);
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.fillStyle = color;
     ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText(group.label, box.x + 6, box.y + 12);
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, chipX + 6, chipY + 8);
   }
   ctx.restore();
 }
@@ -295,11 +309,12 @@ function drawEdges(
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
+      const { fx, fy, tx, ty } = edgePorts(from, to);
       ctx.strokeStyle = withAlpha(css("--accent-dim"), 0.55);
       ctx.lineWidth = widthFor(edge, lens, graph);
       ctx.beginPath();
-      ctx.moveTo(from.x + from.width / 2, from.y + from.height / 2);
-      ctx.lineTo(to.x + to.width / 2, to.y + to.height / 2);
+      ctx.moveTo(fx, fy);
+      ctx.lineTo(tx, ty);
       ctx.stroke();
     }
   } else if (level === 2) {
@@ -310,26 +325,24 @@ function drawEdges(
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
+      const { fx, fy, tx, ty } = edgePorts(from, to);
       ctx.beginPath();
-      ctx.moveTo(from.x + from.width / 2, from.y + from.height / 2);
-      ctx.lineTo(to.x + to.width / 2, to.y + to.height / 2);
+      ctx.moveTo(fx, fy);
+      ctx.lineTo(tx, ty);
       ctx.stroke();
     }
   } else if (level === 3) {
-    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.5);
+    ctx.strokeStyle = withAlpha(css("--text-muted"), 0.45);
     ctx.lineWidth = 1.2;
     for (const edge of graph.edges) {
       if (edge.type !== "call") continue;
       const from = positions.get(edge.from);
       const to = positions.get(edge.to);
       if (!from || !to || !visible.has(edge.from) || !visible.has(edge.to)) continue;
-      const fx = from.x + from.width / 2;
-      const fy = from.y + from.height / 2;
-      const tx = to.x + to.width / 2;
-      const ty = to.y + to.height / 2;
+      const { fx, fy, tx, ty } = edgePorts(from, to);
       ctx.beginPath();
       ctx.moveTo(fx, fy);
-      ctx.quadraticCurveTo((fx + tx) / 2, Math.min(fy, ty) - 30, tx, ty);
+      ctx.quadraticCurveTo((fx + tx) / 2, Math.min(fy, ty) - 34, tx, ty);
       ctx.stroke();
     }
   }
@@ -343,10 +356,10 @@ function drawPortals(ctx: CanvasRenderingContext2D, portals: Portal[], visible: 
     if (visible.has(p.target)) continue;
     ctx.beginPath();
     ctx.arc(p.x, p.y, PORTAL_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = withAlpha(css("--accent"), 0.08);
+    ctx.fillStyle = css("--bg-panel");
     ctx.fill();
     ctx.strokeStyle = css("--accent");
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.2;
     ctx.setLineDash([4, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
@@ -398,7 +411,7 @@ function drawNode(
     ctx.shadowBlur = 12;
   }
   roundRect(ctx, rect.x, rect.y, rect.width, rect.height, NODE_RADIUS);
-  ctx.fillStyle = withAlpha(state.color, 0.14);
+  ctx.fillStyle = withAlpha(state.color, 0.24);
   ctx.fill();
   ctx.shadowBlur = 0;
 

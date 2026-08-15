@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { NavigationState } from "./model/types";
-import { layoutVisible } from "./layout";
+import { edgePorts, layoutVisible } from "./layout";
 import { loadSerialized } from "./test-helpers";
 
 const EMPTY_NAV: NavigationState = { focus: null, level: 1, lens: "layers", trail: [], selected: null, visited: new Set() };
@@ -50,5 +50,32 @@ describe("layoutVisible (specs/05-rendering.md)", () => {
   it("retorna vazio com geometria zero", async () => {
     const graph = await loadSerialized("basic");
     expect(layoutVisible(graph, EMPTY_NAV, 0, 0, {}).size).toBe(0);
+  });
+});
+
+describe("edgePorts — arestas não cortam o interior do nó", () => {
+  const from = { x: 0, y: 0, width: 100, height: 50 };
+  const to = { x: 200, y: 100, width: 100, height: 50 };
+
+  it("origem termina no perímetro (borda direita) e destino na borda esquerda", () => {
+    const { fx, fy, tx } = edgePorts(from, to);
+    expect(fx).toBeCloseTo(100); // borda direita do `from`
+    expect(tx).toBeCloseTo(200); // borda esquerda do `to`
+    expect(fy).toBeGreaterThanOrEqual(from.y);
+    expect(fy).toBeLessThanOrEqual(from.y + from.height);
+  });
+
+  it("vertical: origem na borda de baixo, destino na borda de cima", () => {
+    const above = { x: 0, y: 0, width: 50, height: 50 };
+    const below = { x: 0, y: 200, width: 50, height: 50 };
+    const { fy, ty } = edgePorts(above, below);
+    expect(fy).toBeCloseTo(50);
+    expect(ty).toBeCloseTo(200);
+  });
+
+  it("sobreposição de centros não explode (fallback para centro)", () => {
+    const { fx, fy } = edgePorts(from, from);
+    expect(fx).toBe(50);
+    expect(fy).toBe(25);
   });
 });
