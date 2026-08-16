@@ -548,8 +548,9 @@ function drawLensGroups(
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Chip de cabeçalho da camada
-    const label = `CAMADA: ${group.label.toUpperCase()}`;
+    // Chip de cabeçalho da camada ou domínio
+    const prefix = group.id.startsWith("domain") ? "DOMÍNIO" : "CAMADA";
+    const label = `${prefix}: ${group.label.toUpperCase()}`;
     const labelW = ctx.measureText(label).width + 16;
     const chipX = box.x + 8;
     const chipY = box.y - 10;
