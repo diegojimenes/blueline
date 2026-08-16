@@ -113,6 +113,29 @@ export function clearSession(): void {
   }
 }
 
+export const RECENT_PROJECTS_KEY = "codeatlas:recent_projects";
+
+export function getRecentProjects(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_PROJECTS_KEY);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addRecentProject(path: string): void {
+  try {
+    const recent = getRecentProjects();
+    const updated = [path, ...recent.filter((p) => p !== path)].slice(0, 5); // Keep top 5
+    localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(updated));
+  } catch {
+    // noop
+  }
+}
+
 /**
  * Compara se duas instâncias de sessão contêm os mesmos valores funcionais
  * (ignorando savedAt), evitando escritas desnecessárias no localStorage.

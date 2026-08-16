@@ -2517,3 +2517,29 @@
   color: var(--text-faint);
   font-style: italic;
 }
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-normal);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.recent-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-bright);
+}

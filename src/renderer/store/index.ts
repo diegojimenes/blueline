@@ -35,7 +35,7 @@ import {
 import { demoGraph } from "../demo/demoGraph";
 import { demoConfig } from "../demo/demoConfig";
 import { getParser } from "../parser";
-import { hasSessionChanged, loadSession, saveSession, type SessionInput } from "../session";
+import { hasSessionChanged, loadSession, saveSession, addRecentProject, type SessionInput } from "../session";
 
 export type Theme = "dark" | "light";
 
@@ -380,6 +380,7 @@ export const useStore = create<AppState>()((set, get) => {
     });
     void get().startWatcher();
     void get().refreshGitStatus();
+    addRecentProject(path);
   },
 
   openProjectDialog: async () => {
