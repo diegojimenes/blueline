@@ -97,7 +97,7 @@ export interface HistoryEntry {
   target: NodeId | null;
 }
 
-/** `codeatlas.json` na raiz do projeto. */
+/** `blueline.json` (ou legado `codeatlas.json`) na raiz do projeto. */
 export interface ProjectConfig {
   domainPaths?: Record<string, string>;
   ignore?: string[];
