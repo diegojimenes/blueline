@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🗺️ CodeAtlas
+# 🗺️ BlueLine
 
 **Plataforma desktop de visualização arquitetural e entendimento de código em tempo real para desenvolvimento assistido por agentes de IA.**
 
@@ -13,7 +13,7 @@
 
 <br />
 
-[Visão do Produto](#-o-que-é-o-codeatlas) •
+[Visão do Produto](#-o-que-é-o-blueline) •
 [Principais Recursos](#-principais-recursos) •
 [Arquitetura](#-arquitetura-do-sistema) •
 [Comandos & Atalhos](#-comandos-e-atalhos) •
@@ -24,14 +24,14 @@
 
 ---
 
-## 💡 O que é o CodeAtlas?
+## 💡 O que é o BlueLine?
 
 Trabalhar com **agentes de IA no terminal** (como Claude Code, Cursor CLI, Aider, Codex ou scripts autônomos) é incrivelmente rápido, mas frequentemente **cego**. O agente cria, move e refatora arquivos em rajadas, deixando para o desenvolvedor o fardo cognitivo de reconstruir mentalmente a arquitetura do sistema a cada iteração.
 
-O **CodeAtlas não é um agente, não é um chat e não é um editor de texto**. Ele **fica ao lado do seu fluxo**:
+O **BlueLine não é um agente, não é um chat e não é um editor de texto**. Ele **fica ao lado do seu fluxo**:
 Abre o mesmo repositório no seu computador, observa as modificações em tempo real via file watcher nativo e exibe um **mapa vivo da arquitetura** (módulos, classes, métodos, funções aninhadas e as dependências entre eles), permitindo auditar e revisar alterações instantaneamente.
 
-### ⚖️ O que o CodeAtlas é (e o que não é)
+### ⚖️ O que o BlueLine é (e o que não é)
 
 | ✅ É | ❌ Não é |
 |---|---|
@@ -46,7 +46,7 @@ Abre o mesmo repositório no seu computador, observa as modificações em tempo 
 ## ✨ Principais Recursos
 
 ### 🔍 1. Zoom Semântico em 5 Níveis
-Em vez de um scroll infinito que apenas redimensiona caixas, o CodeAtlas troca a **representação semântica** em cada nível de abstração através de ações explícitas:
+Em vez de um scroll infinito que apenas redimensiona caixas, o BlueLine troca a **representação semântica** em cada nível de abstração através de ações explícitas:
 
 ```
 [ Nível 1: Sistema ] ──> Blocos de Módulos/Camadas & Acoplamento global
@@ -117,7 +117,7 @@ Armazena a trilha percorrida, nós visitados, lente ativa, posição de viewport
 
 ## 🏛️ Arquitetura do Sistema
 
-O CodeAtlas é construído com separação estrita de responsabilidades: **Modelo Primeiro, UI Depois**.
+O BlueLine é construído com separação estrita de responsabilidades: **Modelo Primeiro, UI Depois**.
 
 ```mermaid
 graph TD
@@ -147,7 +147,7 @@ graph TD
         QuickSearch[QuickSearch Modal]
     end
 
-    Watcher -->|codeatlas:files-changed| TreeSitter
+    Watcher -->|blueline:files-changed| TreeSitter
     FS -->|read_project| TreeSitter
     Git -->|git_status / git_diff| Delta
     PTY <-->|PTY I/O Stream| Terminal
@@ -175,7 +175,7 @@ graph TD
 
 ## ⌨️ Comandos e Atalhos
 
-### Comandos do Terminal CodeAtlas
+### Comandos do Terminal BlueLine
 
 | Comando | Sintaxe / Exemplo | Descrição |
 |---|---|---|
@@ -207,7 +207,7 @@ graph TD
 ## 📁 Estrutura de Diretórios
 
 ```
-codeatlas/
+blueline/
 ├── src/
 │   ├── core/                  # Núcleo puro (independente de UI)
 │   │   ├── analyze/           # Construção e resolução do grafo
@@ -269,10 +269,10 @@ pnpm tauri dev
 pnpm dev
 ```
 
-### 3. Abrindo um Repositório no CodeAtlas
+### 3. Abrindo um Repositório no BlueLine
 
 1. Ao abrir o aplicativo, clique no botão **"Abrir"** no canto superior esquerdo ou use o seletor de diretório.
-2. O CodeAtlas irá escanear o projeto, construir o grafo estrutural e iniciar o watcher de arquivos em tempo real.
+2. O BlueLine irá escanear o projeto, construir o grafo estrutural e iniciar o watcher de arquivos em tempo real.
 3. No painel inferior de terminal, seu shell habitual estará pronto para rodar seu agente de IA (`claude`, `aider`, etc.) ou comandos de navegação (`goto`, `ls`, `query`).
 
 ---
@@ -301,9 +301,9 @@ pnpm lint
 
 ---
 
-## ⚙️ Configuração Personalizada (`codeatlas.json`)
+## ⚙️ Configuração Personalizada (`codeatlas.json` / `blueline.json`)
 
-Você pode adicionar um arquivo `codeatlas.json` na raiz do seu repositório para personalizar a identificação de camadas e domínios:
+Você pode adicionar um arquivo `codeatlas.json` (ou `blueline.json`) na raiz do seu repositório para personalizar a identificação de camadas e domínios:
 
 ```json
 {

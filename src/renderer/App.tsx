@@ -81,7 +81,7 @@ export default function App() {
         >
           🔍 Buscar
         </button>
-        <span className="app-title">CodeAtlas</span>
+        <span className="app-title">BlueLine</span>
         {projectPath && <span className="app-project">{projectPath}</span>}
         <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label="Alternar tema">
           {theme === "dark" ? "☀" : "◐"}

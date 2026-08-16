@@ -1,11 +1,11 @@
-# CodeAtlas — Guia de Contexto para Agentes
+# BlueLine — Guia de Contexto para Agentes
 
 Ferramenta desktop para **visualizar e revisar código** durante trabalho com agentes de IA.
 Não é um agente, não é um chat, não é um linter. É uma **plataforma de entendimento e revisão**:
 o usuário roda seu agente de IA favorito num terminal real (bash) e a plataforma mostra, em tempo real,
 como a estrutura do código está evoluindo (módulos, classes, métodos e as ligações entre eles).
 
-Nome de trabalho: **CodeAtlas**.
+Nome do projeto: **BlueLine**.
 
 ## Stack
 
@@ -41,7 +41,7 @@ Nome de trabalho: **CodeAtlas**.
 | Lint/typecheck | `pnpm lint` / `pnpm typecheck` |
 | Build de produção | `pnpm build` |
 
-> **M0 a M13 concluídos (Pipeline Completo CodeAtlas)**:
+> **M0 a M13 concluídos (Pipeline Completo BlueLine)**:
 > - **M0 a M6 (MVP + Refinamentos + Sessão)**: layout IDE de 4 painéis, parse incremental TS/JS, grafo normalizado, zoom semântico (níveis 1 a 5), portais, lentes (Camadas/Acoplamento/Domínio), terminal real xterm.js + PTY Rust, live updates via `notify` + debounce, git status, e persistência de sessão.
 > - **M7 (Busca Fuzzy Global)**: modal QuickSearch com atalhos `Ctrl+P`/`Cmd+P`/`/` e filtro O(1).
 > - **M8 & M9 (Diff & Snapshots)**: diff visual unificado no Inspector e `computeGraphDiff` para comparação estrutural de revisões.

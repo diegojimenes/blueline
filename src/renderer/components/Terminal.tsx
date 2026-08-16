@@ -7,7 +7,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { NAV_MARKER, initialTtyLine, navLineCommand, ttyStep, type TtyLineState } from "../../core";
 import { useStore } from "../store";
 
-const PROMPT = "codeatlas » ";
+const PROMPT = "blueline » ";
 
 interface PtyOutputEvent {
   data: string;
@@ -67,7 +67,7 @@ export function Terminal() {
 
     if (!isTauri()) {
       // Browser (`pnpm dev`): sem backend, o terminal apenas ecoa o input.
-      term.writeln("CodeAtlas — modo browser (sem PTY). Terminal real: pnpm tauri dev.");
+      term.writeln("BlueLine — modo browser (sem PTY). Terminal real: pnpm tauri dev.");
       term.write(PROMPT);
     } else {
       // Listener único por janela; o PTY em si é (re)spawnado pelo efeito

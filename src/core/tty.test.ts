@@ -22,7 +22,7 @@ function ptyOf(actions: TtyAction[]): string {
 }
 
 describe("tty · desambiguação comando vs shell (specs/08-terminal.md)", () => {
-  it("goto reservado → comando CodeAtlas", () => {
+  it("goto reservado → comando BlueLine", () => {
     const actions = run("goto pedidos.PedidoService.criar\r");
     expect(actions).toContainEqual({ kind: "command", input: "goto pedidos.PedidoService.criar" });
     expect(actions.some((a) => a.kind === "pty")).toBe(false);
@@ -34,7 +34,7 @@ describe("tty · desambiguação comando vs shell (specs/08-terminal.md)", () =>
     expect(actions.some((a) => a.kind === "command")).toBe(false);
   });
 
-  it("ls é sempre comando CodeAtlas no MVP", () => {
+  it("ls é sempre comando BlueLine no MVP", () => {
     expect(run("ls\r")).toContainEqual({ kind: "command", input: "ls" });
   });
 

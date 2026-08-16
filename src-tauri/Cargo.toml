@@ -1,8 +1,8 @@
 [package]
 name = "codeatlas"
 version = "0.1.0"
-description = "CodeAtlas — visualize and review code while working with AI agents"
-authors = ["CodeAtlas"]
+description = "BlueLine — visualize and review code while working with AI agents"
+authors = ["BlueLine"]
 edition = "2021"
 
 [lib]

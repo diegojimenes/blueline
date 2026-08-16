@@ -1,5 +1,5 @@
 /**
- * Motor de Syntax Highlighting leve e Word-Level Diff para CodeAtlas.
+ * Motor de Syntax Highlighting leve e Word-Level Diff para BlueLine.
  * 
  * Fornece:
  * 1. Tokenização e colorização de sintaxe sem dependências pesadas externas.

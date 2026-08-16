@@ -3,10 +3,10 @@ import { computeWordDiff, highlightCodeLine, parseCleanDiff } from "./syntaxHigh
 
 describe("syntaxHighlighter", () => {
   it("realça palavras-chave, strings e identificadores", () => {
-    const tokens = highlightCodeLine('const name: string = "CodeAtlas";');
+    const tokens = highlightCodeLine('const name: string = "BlueLine";');
     expect(tokens.some((t) => t.type === "keyword" && t.text === "const")).toBe(true);
     expect(tokens.some((t) => t.type === "type" && t.text === "string")).toBe(true);
-    expect(tokens.some((t) => t.type === "string" && t.text === '"CodeAtlas"')).toBe(true);
+    expect(tokens.some((t) => t.type === "string" && t.text === '"BlueLine"')).toBe(true);
   });
 
   it("reconhece comentários de linha e bloco", () => {

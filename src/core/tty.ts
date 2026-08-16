@@ -3,12 +3,12 @@
  *
  * Duas superfícies no mesmo xterm.js:
  *  - **Shell**: input vai ao PTY (backend) sem interferência.
- *  - **Comando CodeAtlas**: input começa com verbo reservado (goto|up|ls|lens|clear|help|open)
+ *  - **Comando BlueLine**: input começa com verbo reservado (goto|up|ls|lens|clear|help|open)
  *    e é processado por `core/commands` (o `open` é assíncrono — store).
  *
  * Regra de desambiguação (spec 08): se a primeira palavra do input for verbo
- * reservado, é comando CodeAtlas; senão, vai ao PTY. `ls` é sempre comando
- * CodeAtlas no MVP (`/bin/ls` usa o shell).
+ * reservado, é comando BlueLine; senão, vai ao PTY. `ls` é sempre comando
+ * BlueLine no MVP (`/bin/ls` usa o shell).
  *
  * A decisão é tomada tecla a tecla: enquanto o buffer é prefixo de um verbo
  * reservado, mantemos a linha "em decidindo" (sem eco); assim que deixa de ser,
@@ -88,7 +88,7 @@ function stepChar(state: TtyLineState, c: string): { state: TtyLineState; action
   switch (state.phase) {
     case "idle":
       if (isPrintable(c)) {
-        // Começa uma linha: pode ser comando CodeAtlas?
+        // Começa uma linha: pode ser comando BlueLine?
         if (isCommandStart(c)) return { state: { phase: "deciding", buffer: c }, actions: [] };
         return { state: { phase: "pass", buffer: "" }, actions: [{ kind: "pty", data: c }] };
       }

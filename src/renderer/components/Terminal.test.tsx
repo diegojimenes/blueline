@@ -30,7 +30,7 @@ describe("Terminal · xterm.js (M4)", () => {
     render(<Terminal />);
     const term = terminal();
     expect(term.writeln).toHaveBeenCalledWith(expect.stringContaining("modo browser"));
-    expect(term.write).toHaveBeenCalledWith("codeatlas » ");
+    expect(term.write).toHaveBeenCalledWith("blueline » ");
   });
 
   it("goto digitado é interceptado → comando CodeAtlas + linha clicável", () => {
