@@ -7,6 +7,7 @@ import { Inspector } from "./components/Inspector";
 import { QuickSearch } from "./components/QuickSearch";
 import { StatusBar } from "./components/StatusBar";
 import { Terminal } from "./components/Terminal";
+import { Onboarding } from "./components/Onboarding";
 import { flushSession, useStore } from "./store";
 import { setupWatcher } from "./watcher";
 import { useTranslation } from "./i18n";
@@ -15,6 +16,7 @@ export default function App() {
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
   const projectPath = useStore((s) => s.projectPath);
+  const projectOpen = useStore((s) => s.projectOpen);
   const openProjectDialog = useStore((s) => s.openProjectDialog);
   const restoreSession = useStore((s) => s.restoreSession);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -89,9 +91,15 @@ export default function App() {
           {theme === "dark" ? "☀" : "◐"}
         </button>
       </header>
-      <Explorer />
-      <Canvas />
-      <Inspector />
+      {projectOpen ? (
+        <>
+          <Explorer />
+          <Canvas />
+          <Inspector />
+        </>
+      ) : (
+        <Onboarding />
+      )}
       <Terminal />
       <StatusBar />
       <QuickSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
