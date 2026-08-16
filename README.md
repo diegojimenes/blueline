@@ -323,7 +323,7 @@ pnpm dev
 
 ### 3. Opening a Repository
 
-1. Click **"Open"** in the top-left corner or use the directory selector.
+1. On the **Welcome to BlueLine** screen, click **"Open Repository"** to select your local codebase, or **"Try Demo Repository"** to explore the tool using its own source code.
 2. BlueLine scans the project, builds the structural graph, and starts the real-time file watcher.
 3. In the terminal panel at the bottom, your shell is ready to run your AI agent (`claude`, `aider`, etc.) or navigation commands (`goto`, `ls`, `query`).
 
