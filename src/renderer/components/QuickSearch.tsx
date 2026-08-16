@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { fuzzySearch, type SearchResult } from "../../core/search";
 import { useStore } from "../store";
+import { useTranslation } from "../i18n";
 
 export interface QuickSearchProps {
   open: boolean;
@@ -14,6 +15,7 @@ export function QuickSearch({ open, onClose }: QuickSearchProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const { t } = useTranslation();
 
   const results = useMemo(() => {
     if (!open || !graph) return [];
@@ -73,7 +75,7 @@ export function QuickSearch({ open, onClose }: QuickSearchProps) {
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Busca Global de Símbolos"
+      aria-label={t("search_aria")}
     >
       <div className="quick-search-modal">
         <div className="quick-search-header">
@@ -84,11 +86,11 @@ export function QuickSearch({ open, onClose }: QuickSearchProps) {
             ref={inputRef}
             type="text"
             className="quick-search-input"
-            placeholder="Buscar módulo, classe ou função (Ctrl+P / ⌘P)..."
+            placeholder={t("search_placeholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            aria-label="Buscar símbolos no projeto"
+            aria-label={t("search_input_aria")}
           />
           <kbd className="quick-search-kbd">ESC</kbd>
         </div>
@@ -96,7 +98,7 @@ export function QuickSearch({ open, onClose }: QuickSearchProps) {
         <div className="quick-search-body">
           {results.length === 0 ? (
             <div className="quick-search-empty">
-              {query ? `Nenhum símbolo encontrado para "${query}"` : "Nenhum nó disponível no projeto"}
+              {query ? t("search_not_found", { query }) : t("search_no_nodes")}
             </div>
           ) : (
             <ul ref={listRef} className="quick-search-list" role="listbox">

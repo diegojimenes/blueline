@@ -2,148 +2,168 @@
 
 # 🗺️ BlueLine
 
-**Plataforma desktop de visualização arquitetural e entendimento de código em tempo real para desenvolvimento assistido por agentes de IA.**
+**See what your AI coding agent is actually changing.**
 
 [![Tauri](https://img.shields.io/badge/Tauri-v2.0-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app/)
 [![React](https://img.shields.io/badge/React-v19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-v5.8-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-2021_Edition-DEA584?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Vitest](https://img.shields.io/badge/Vitest-178_tests_passed-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Coverage](https://img.shields.io/badge/Coverage-v8_enabled-brightgreen?style=flat-square)](https://vitest.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
 <br />
 
-[Visão do Produto](#-o-que-é-o-blueline) •
-[Principais Recursos](#-principais-recursos) •
-[Arquitetura](#-arquitetura-do-sistema) •
-[Comandos & Atalhos](#-comandos-e-atalhos) •
-[Configuração](#-configuração-personalizada-bluelinejson) •
-[Guia de Instalação](#-guia-de-instalação-e-uso) •
-[Marcos M0–M13](#-marcos-implementados-m0m13) •
+[Why?](#-why) •
+[What is BlueLine?](#-what-is-blueline) •
+[Features](#-features) •
+[Architecture](#-architecture) •
+[Commands & Shortcuts](#-commands--shortcuts) •
+[Configuration](#-configuration-bluelinejson) •
+[Installation](#-installation--usage) •
+[Milestones M0–M13](#-implemented-milestones-m0m13) •
 [Roadmap M14+](#-roadmap-m14)
 
 </div>
 
 ---
 
-## 💡 O que é o BlueLine?
+## 💡 Why?
 
-Trabalhar com **agentes de IA no terminal** (como Claude Code, Cursor CLI, Aider, Codex ou scripts autônomos) é incrivelmente rápido, mas frequentemente **cego**. O agente cria, move e refatora arquivos em rajadas, deixando para o desenvolvedor o fardo cognitivo de reconstruir mentalmente a arquitetura do sistema a cada iteração.
+Working with **AI agents in the terminal** (Claude Code, Cursor CLI, Aider, Codex, or autonomous scripts) is incredibly fast. But also often **blind**.
 
-O **BlueLine não é um agente, não é um chat e não é um editor de texto**. Ele **fica ao lado do seu fluxo**:
-Abre o mesmo repositório no seu computador, observa as modificações em tempo real via file watcher nativo e exibe um **mapa vivo da arquitetura** (módulos, classes, métodos, funções aninhadas e as dependências entre eles), permitindo auditar e revisar alterações instantaneamente.
+An agent can create, move, and refactor dozens of files in seconds — leaving the developer with the cognitive burden of mentally reconstructing the system's architecture on every iteration.
 
-### ⚖️ O que o BlueLine é (e o que não é)
+The problem isn't just reviewing changed lines.
 
-| ✅ É | ❌ Não é |
-|---|---|
-| **Visualização Estrutural Viva** (módulos, classes, métodos, arestas de chamadas/imports) | Um agente de IA, chatbot ou prompt wrapper |
-| **Plataforma de Entendimento e Revisão** de mudanças em tempo real | Uma IDE completa para escrever código do zero |
-| **Terminal Real PTY Integrado** onde você roda seu agente ou shell favorito | Um terminal embutido fake ou decorativo |
-| **Zoom Semântico e Lentes Arquiteturais** mantendo a estabilidade espacial | Um linter, formatador ou gerador sintético de código |
-| **Exportação Passiva de Contexto Determinístico** para colar no seu prompt | Um sistema que conversa com LLMs ou toma decisões autônomas |
-| **Barramento Determinístico** de navegação com histórico auditável | Um visualizador de grafos genérico com nós desorganizados |
+The real problem is reconstructing:
+
+- which modules were affected
+- which dependencies were created or removed
+- which parts of the architecture changed
+- what the blast radius was
+- whether coupling increased
+- which parts of the system now depend on the change
+
+**BlueLine shows you the architectural impact of what your agent just did.**
 
 ---
 
-## ✨ Principais Recursos
+## 🔍 What is BlueLine?
 
-### 🔍 1. Zoom Semântico em 5 Níveis
-Em vez de um scroll infinito que apenas redimensiona caixas, o BlueLine troca a **representação semântica** em cada nível de abstração através de ações explícitas (duplo clique / comando `goto` / `up`):
+BlueLine is a **desktop architectural observability tool** for AI-assisted development.
+
+It is **not** an agent, not a chat, not an editor.
+
+It watches the same repository your agent is working on, detects changes in real time via native file watcher, and displays a **live architectural map** — modules, classes, methods, functions, and the dependencies between them.
+
+| ✅ It is | ❌ It is not |
+|---|---|
+| **Live Structural Visualization** (modules, classes, methods, call/import edges) | An AI agent, chatbot, or prompt wrapper |
+| **Architectural Review Platform** for real-time change understanding | A full IDE for writing code from scratch |
+| **Real PTY Terminal** where you run your favorite AI agent or shell | A fake or decorative embedded terminal |
+| **Semantic Zoom & Architectural Views** with spatial stability | A linter, formatter, or synthetic code generator |
+| **Passive Deterministic Context Export** for pasting into prompts | A system that talks to LLMs or makes autonomous decisions |
+| **Deterministic Navigation Bus** with auditable history | A generic graph visualizer with disorganized nodes |
+
+---
+
+## ✨ Features
+
+### 🔍 1. Semantic Zoom — 5 Levels
+Instead of infinite scroll that just rescales boxes, BlueLine switches the **semantic representation** at each abstraction level via explicit actions (double-click / `goto` command / `up`):
 
 ```
-[ Nível 1: Sistema ] ──> Blocos de Módulos/Camadas & Acoplamento global
+[ Level 1: System ] ──> Module/Layer blocks & global coupling
         │
-[ Nível 2: Módulo ]  ──> Classes, Funções e Arquivos do módulo & Relações de Import
+[ Level 2: Module ]  ──> Classes, functions & files, import relations
         │
-[ Nível 3: Classe ]  ──> Métodos e Membros da classe & Grafo de Chamadas
+[ Level 3: Class ]   ──> Methods, members & call graph
         │
-[ Nível 4: Método ]  ──> Inspeção de Código-fonte, Assinatura e Escopo
+[ Level 4: Method ]  ──> Source inspection, signature & scope
         │
-[ Nível 5: Local ]   ──> Funções aninhadas / closures locais e fluxo interno
+[ Level 5: Local ]   ──> Nested functions / closures & internal flow
 ```
 
-### 👓 2. Lentes de Arquitetura (Sem Perda de Posição Espacial)
-As lentes recolorem e agrupam o grafo **sem mover os nós**, preservando a memória espacial que você acabou de construir:
-- 🏢 **Camadas (`layers`)**: Visualiza `domain`, `infra`, `ui`, `application`, `shared` e `entrypoint`.
-- 🌐 **Domínio (`domain`)**: Agrupa símbolos por contextos de negócio configurados no `blueline.json`.
-- 🔗 **Acoplamento (`coupling`)**: Destaca nós centrais e calcula métricas de dependência aferente/eferente.
+### 👓 2. Architectural Views (Without Losing Spatial Position)
+Views recolor and regroup the graph **without moving nodes**, preserving your spatial memory:
+- 🏢 **Layers**: Visualizes `domain`, `infra`, `ui`, `application`, `shared`, `entrypoint`.
+- 🌐 **Domain**: Groups symbols by business contexts configured in `blueline.json`.
+- 🔗 **Coupling**: Highlights central nodes and calculates afferent/efferent dependency metrics.
 
-### ⚡ 3. Live Updates & Observação em Tempo Real
-- **File Watcher Nativo em Rust (`notify`)**: Detecta mudanças no disco com *debounce* inteligente (150ms).
-- **Re-parse Incremental (Tree-Sitter WASM)**: Apenas os arquivos alterados são reprocessados.
-- **Delta Push & Pulso Visual**: O Canvas emite um pulso visual destacado nos nós afetados assim que seu agente salva um arquivo.
-- **Fonte de Verdade Git**: Integração direta com `git status` para distinguir edições reais de salvamentos no-op.
+### ⚡ 3. Live Updates & Real-Time Observation
+- **Native Rust File Watcher (`notify`)**: Detects disk changes with intelligent debounce (150ms).
+- **Incremental Re-parse (Tree-Sitter WASM)**: Only changed files are reprocessed.
+- **Delta Push & Visual Pulse**: The canvas emits a visual pulse on affected nodes as soon as your agent saves a file.
+- **Git as Source of Truth**: Direct integration with `git status` to distinguish real edits from no-op saves.
 
-### 💻 4. Terminal Real (PTY) com Despachante Híbrido
-O painel de terminal integra o **xterm.js** com um backend PTY real em Rust (`portable-pty`):
-- Roda seu shell padrão (`bash`, `zsh`, `fish`) nativamente.
-- Executa seu agente favorito (`claude`, `aider`, `git commit`, `pnpm test`) no mesmo diretório do projeto.
-- **Despacho Inteligente**: Comandos reservados (`goto`, `up`, `ls`, `lens`, `query`, `clear`, `help`) são interceptados instantaneamente e refletidos no grafo.
-- **Histórico Clicável**: Cada comando registrado no terminal vira um link para navegar pelo grafo.
+### 💻 4. Real Terminal (PTY) with Hybrid Dispatcher
+The terminal panel integrates **xterm.js** with a real Rust PTY backend (`portable-pty`):
+- Runs your default shell (`bash`, `zsh`, `fish`) natively.
+- Runs your favorite agent (`claude`, `aider`, `git commit`, `pnpm test`) in the project directory.
+- **Smart Dispatch**: Reserved commands (`goto`, `up`, `ls`, `lens`, `query`, `clear`, `help`) are intercepted instantly and reflected in the graph.
+- **Clickable History**: Each command in the terminal becomes a link to navigate the graph.
 
-### 🌀 5. Portais & Navegação Lateral
-Ao inspecionar uma classe ou método no Nível 3, chamadas a entidades externas são renderizadas como **Portais Determinísticos** nas laterais do Canvas (entradas à esquerda, saídas à direita), permitindo saltar diretamente para módulos externos seguindo o fluxo de execução sem poluição visual.
+### 🌀 5. Portals & Lateral Navigation
+When inspecting a class or method at Level 3, calls to external entities are rendered as **Deterministic Portals** on the canvas sides (entries on the left, exits on the right), allowing you to jump directly to external modules following the execution flow without visual pollution.
 
-### 🔎 6. Busca Fuzzy Global Instantânea (`Ctrl+P` / `Cmd+P` / `/`)
-Modal `QuickSearch` com busca difusa indexada em memória para encontrar instantaneamente qualquer módulo, classe, interface ou método por nome ou caminho canônico.
+### 🔎 6. Instant Fuzzy Search (`Ctrl+P` / `Cmd+P` / `/`)
+`QuickSearch` modal with in-memory indexed fuzzy search to instantly find any module, class, interface, or method by name or canonical path.
 
-### 📊 7. Diff Estrutural & Snapshots de Grafo
-- Visualizador de **Git Diff unificado** com syntax highlighting e word-level diff para adições, deleções e hunks.
-- Comparação entre snapshots de grafo (`computeGraphDiff`) identificando nós estruturalmente adicionados, removidos ou modificados após rajadas de commits do agente.
+### 📊 7. Structural Diff & Graph Snapshots
+- **Unified Git Diff viewer** with syntax highlighting and word-level diff for additions, deletions, and hunks.
+- Graph snapshot comparison (`computeGraphDiff`) identifying structurally added, removed, or modified nodes after agent commit bursts.
 
-### 📋 8. Protocolo de Agente & Exportação Passiva de Contexto
-> **Importante:** O BlueLine **NÃO** conversa com o agente, **NÃO** faz chamadas a APIs de LLMs e **NÃO** possui chat conversacional.
-- **Exportação de Contexto Estruturado**: Fornece um mecanismo rápido para copiar a assinatura, hierarquia, dependências e referências cruzadas de um nó no formato otimizado para você colar no prompt do seu agente de IA CLI.
-- **Indicador Visual de Atenção**: Notificação visual na `StatusBar` e na barra de revisão indicando os nós em foco na sessão de análise.
+### 📋 8. Agent Protocol & Passive Context Export
+> **Important:** BlueLine does **NOT** talk to the agent, does **NOT** call LLM APIs, and does **NOT** have conversational chat.
+- **Structured Context Export**: Quickly copy a node's signature, hierarchy, dependencies, and cross-references in a format optimized for pasting into your AI CLI agent's prompt.
+- **Visual Attention Indicator**: Visual notification in the `StatusBar` and review bar indicating nodes in focus during the analysis session.
 
-### 🐍 9. Suporte Multi-Linguagem Extensível
-Arquitetura de parsing baseada em `CompositeParser`:
-- 🟦 **TypeScript / TSX / JavaScript / JSX** (via Tree-Sitter WASM incremental).
-- 🟨 **Python (`.py`, `.pyi`)** (extração de classes, métodos, imports e chamadas).
+### 🐍 9. Extensible Multi-Language Support
+Parsing architecture based on `CompositeParser`:
+- 🟦 **TypeScript / TSX / JavaScript / JSX** (via incremental Tree-Sitter WASM).
+- 🟨 **Python (`.py`, `.pyi`)** (class, method, import, and call extraction).
 
-### 🚀 10. Performance com Spatial Grid Hash & Cache Persistente
-- **Spatial Grid Index**: Culling espacial com tempo de resposta $O(1)$, mantendo 60 FPS fluidos no Canvas mesmo com milhares de nós.
-- **Graph Cache Storage**: Armazenamento e restauração de snapshots em cache para boot instantâneo de projetos extensos.
+### 🚀 10. Performance with Spatial Grid Hash & Persistent Cache
+- **Spatial Grid Index**: Spatial culling with O(1) lookup, maintaining 60 FPS on the canvas even with thousands of nodes.
+- **Graph Cache Storage**: Snapshot storage and restoration for instant boot on large projects.
 
-### 🎯 11. Motor de Query Estruturada (`query` / `q`)
-Consultas declarativas avançadas direto no terminal para filtrar e isolar partes específicas da arquitetura:
+### 🎯 11. Structured Query Engine (`query` / `q`)
+Advanced declarative queries directly in the terminal to filter and isolate specific parts of the architecture:
 ```bash
 query kind:class layer:domain coupling:>2
 query name:User file:auth.ts
 query kind:method owner:PedidoService
 ```
 
-### 💾 12. Persistência Reativa de Sessão
-Armazena a trilha percorrida, nós visitados, lente ativa, posição de viewport e histórico no `localStorage`. Ao reabrir o aplicativo, a sessão é restaurada e validada estruturalmente contra o estado atual do disco.
+### 💾 12. Reactive Session Persistence
+Stores the visited trail, selected nodes, active view, viewport position, and history in `localStorage`. When you reopen the app, the session is restored and structurally validated against the current disk state.
 
 ---
 
-## 🏛️ Arquitetura do Sistema
+## 🏛️ Architecture
 
-O BlueLine é construído com separação estrita de responsabilidades: **Modelo Primeiro, UI Depois**.
+BlueLine is built with strict separation of concerns: **Model First, UI Later**.
 
 ```mermaid
 graph TD
-    subgraph RustBackend["Backend Nativo (Rust / Tauri 2)"]
+    subgraph RustBackend["Native Backend (Rust / Tauri 2)"]
         PTY[PTY Process - portable-pty]
         Watcher[File Watcher - notify]
         Git[System Git Provider]
         FS[Project File Scanner]
     end
 
-    subgraph CoreDomain["Núcleo Puro (src/core - TypeScript)"]
+    subgraph CoreDomain["Pure Core (src/core - TypeScript)"]
         TreeSitter[Tree-Sitter WASM Parser]
         BuildGraph[Graph Builder & Resolver]
         CodeGraph[(Normalized CodeGraph)]
         SpatialIndex[Spatial Grid Hash Index]
         QueryEngine[Query Engine]
-        Lenses[Architecture Lenses]
+        Lenses[Architecture Views]
         Delta[Incremental Delta & Diff]
     end
 
-    subgraph FrontendUI["Interface do Usuário (src/renderer - React 19)"]
+    subgraph FrontendUI["User Interface (src/renderer - React 19)"]
         Store[Zustand State Store]
         Canvas[Canvas 2D Renderer]
         Explorer[Tree Explorer]
@@ -171,47 +191,47 @@ graph TD
     Store --> QuickSearch
 ```
 
-### Regras de Ouro da Engenharia
-1. **Núcleo sem Framework (`src/core`)**: Toda a lógica de parse, resolução de imports, cálculo de layout, lentes, busca e diff é TypeScript puro testável com Vitest sem depender do React ou Tauri.
-2. **Grafo Normalizado e Determinístico**: IDs estáveis no formato `modulo.Classe.metodo`.
-3. **Observar > Adivinhar**: Mudanças reais são detectadas pelo sistema de arquivos e validadas contra o Git.
+### Engineering Golden Rules
+1. **Framework-free Core (`src/core`)**: All parse, import resolution, layout, views, search, and diff logic is pure TypeScript testable with Vitest without depending on React or Tauri.
+2. **Normalized & Deterministic Graph**: Stable IDs in the format `module.Class.method`.
+3. **Observe > Guess**: Real changes are detected by the filesystem and validated against Git.
 
 ---
 
-## ⌨️ Comandos e Atalhos
+## ⌨️ Commands & Shortcuts
 
-### Comandos do Terminal BlueLine
+### BlueLine Terminal Commands
 
-| Comando | Sintaxe / Exemplo | Descrição |
+| Command | Syntax / Example | Description |
 |---|---|---|
-| `goto` | `goto auth.AuthService.login` | Salta diretamente para um nó por caminho ou nome |
-| `up` | `up` | Sobe um nível no zoom semântico (equivalente a `Esc`) |
-| `ls` | `ls` | Lista os nós visíveis e filhos no nível atual |
-| `lens` | `lens layers` \| `lens domain` \| `lens coupling` | Alterna a lente arquitetural ativa |
-| `query` / `q` | `query kind:class layer:domain` | Filtra o grafo usando seletores estruturados |
-| `clear` | `clear` | Limpa a tela do terminal |
-| `help` | `help` | Exibe a lista de comandos e opções disponíveis |
+| `goto` | `goto auth.AuthService.login` | Jump directly to a node by path or name |
+| `up` | `up` | Go up one semantic zoom level (equivalent to `Esc`) |
+| `ls` | `ls` | List visible nodes and children at the current level |
+| `lens` | `lens layers` \| `lens domain` \| `lens coupling` | Switch the active architectural view |
+| `query` / `q` | `query kind:class layer:domain` | Filter the graph using structured selectors |
+| `clear` | `clear` | Clear the terminal screen |
+| `help` | `help` | Show available commands and options |
 
-*(Qualquer outro comando não reservado, como `git`, `npm`, `cargo`, `claude`, `aider`, é enviado diretamente ao shell PTY nativo)*
+*(Any other non-reserved command — `git`, `npm`, `cargo`, `claude`, `aider` — is sent directly to the native PTY shell)*
 
-### Atalhos de Teclado
+### Keyboard Shortcuts
 
-| Atalho | Ação |
+| Shortcut | Action |
 |---|---|
-| <kbd>Ctrl</kbd> + <kbd>P</kbd> ou <kbd>Cmd</kbd> + <kbd>P</kbd> | Abrir modal de **Busca Rápida** (QuickSearch) |
-| <kbd>/</kbd> | Focar no Terminal / Busca rápida |
-| <kbd>Esc</kbd> | Subir um nível de zoom semântico |
-| <kbd>Duplo Clique</kbd> (no nó) | Fazer zoom semântico e entrar no elemento |
-| <kbd>Duplo Clique</kbd> (no vazio) | Subir um nível de zoom semântico |
-| <kbd>Alt</kbd> + <kbd>←</kbd> | Voltar no histórico de navegação |
-| <kbd>Alt</kbd> + <kbd>→</kbd> | Avançar no histórico de navegação |
-| <kbd>L</kbd> | Alternar ciclicamente entre as Lentes |
+| <kbd>Ctrl</kbd> + <kbd>P</kbd> or <kbd>Cmd</kbd> + <kbd>P</kbd> | Open **Quick Search** modal |
+| <kbd>/</kbd> | Focus Terminal / Quick Search |
+| <kbd>Esc</kbd> | Go up one semantic zoom level |
+| <kbd>Double Click</kbd> (on node) | Semantic zoom in |
+| <kbd>Double Click</kbd> (on empty space) | Go up one semantic zoom level |
+| <kbd>Alt</kbd> + <kbd>←</kbd> | Navigate back in history |
+| <kbd>Alt</kbd> + <kbd>→</kbd> | Navigate forward in history |
+| <kbd>L</kbd> | Cycle through architectural views |
 
 ---
 
-## ⚙️ Configuração Personalizada (`blueline.json`)
+## ⚙️ Configuration (`blueline.json`)
 
-Você pode adicionar um arquivo `blueline.json` na raiz do seu repositório para personalizar a taxonomia de camadas e domínios de negócio específicos do seu projeto (evitando que diretórios como `engine`, `systems` ou `behaviors` caiam em classificações genéricas):
+Add a `blueline.json` file at the root of your repository to customize the layer taxonomy and business domain contexts for your project:
 
 ```json
 {
@@ -231,142 +251,136 @@ Você pode adicionar um arquivo `blueline.json` na raiz do seu repositório para
 }
 ```
 
-> **Nota de Compatibilidade**: O arquivo `blueline.json` é o padrão oficial. Por motivos de retrocompatibilidade com projetos existentes, o arquivo legado `codeatlas.json` continua sendo carregado como fallback caso `blueline.json` não seja encontrado.
+> **Compatibility Note**: `blueline.json` is the official standard. For backward compatibility, the legacy `codeatlas.json` is still loaded as a fallback if `blueline.json` is not found.
 
 ---
 
-## 📁 Estrutura de Diretórios
+## 📁 Directory Structure
 
 ```
 blueline/
 ├── src/
-│   ├── core/                  # Núcleo puro (independente de UI)
-│   │   ├── analyze/           # Construção e resolução do grafo
-│   │   ├── parse/             # Parsers Tree-Sitter TS/JS e Python
-│   │   ├── storage/           # Cache de grafo persistente
-│   │   ├── agent-protocol.ts  # Exportação de contexto para prompts
-│   │   ├── commands.ts        # Parser e despachante de comandos
-│   │   ├── diff.ts            # Git diff e comparação de snapshots
-│   │   ├── layout.ts          # Algoritmos de layout determinísticos
-│   │   ├── lenses.ts          # Lentes (Camadas, Domínio, Acoplamento)
-│   │   ├── navigation.ts      # Zoom semântico e visibilidade
-│   │   ├── query.ts           # Motor de consultas estruturadas
-│   │   ├── search.ts          # Motor de busca fuzzy
+│   ├── core/                  # Pure core (framework-independent)
+│   │   ├── analyze/           # Graph building and resolution
+│   │   ├── parse/             # Tree-Sitter TS/JS and Python parsers
+│   │   ├── storage/           # Persistent graph cache
+│   │   ├── agent-protocol.ts  # Context export for prompts
+│   │   ├── commands.ts        # Command parser and dispatcher
+│   │   ├── diff.ts            # Git diff and snapshot comparison
+│   │   ├── layout.ts          # Deterministic layout algorithms
+│   │   ├── lenses.ts          # Views (Layers, Domain, Coupling)
+│   │   ├── navigation.ts      # Semantic zoom and visibility
+│   │   ├── query.ts           # Structured query engine
+│   │   ├── search.ts          # Fuzzy search engine
 │   │   ├── spatial-index.ts   # Spatial Grid Hash O(1)
-│   │   └── workspace.ts       # Agregação de monorepos
-│   └── renderer/              # Interface React 19
+│   │   └── workspace.ts       # Monorepo aggregation
+│   └── renderer/              # React 19 UI
 │       ├── components/        # Canvas, Explorer, Inspector, Terminal, QuickSearch, etc.
-│       ├── store/             # Zustand store reativo e integrado
-│       └── session.ts         # Persistência e restauração de sessão
-├── src-tauri/                 # Backend Rust (Tauri 2)
+│       ├── i18n/              # EN/PT internationalization (OS language detection)
+│       ├── store/             # Reactive Zustand store
+│       └── session.ts         # Session persistence and restoration
+├── src-tauri/                 # Rust backend (Tauri 2)
 │   └── src/
-│       ├── git.rs             # Provedor Git nativo (git status / diff)
-│       ├── ptys.rs            # Terminal PTY real (portable-pty)
-│       ├── watcher.rs         # File watcher de alta performance (notify)
-│       └── project.rs         # Scanner de arquivos do projeto
-├── docs/                      # Visão e design de produto
-├── specs/                     # Especificações técnicas formais (M0 a M13)
-└── fixtures/                  # Repositórios e códigos de teste
+│       ├── git.rs             # Native Git provider (git status / diff)
+│       ├── ptys.rs            # Real PTY terminal (portable-pty)
+│       ├── watcher.rs         # High-performance file watcher (notify)
+│       └── project.rs         # Project file scanner
+├── docs/                      # Product vision and design
+├── specs/                     # Formal technical specifications (M0 to M13)
+└── fixtures/                  # Test repositories and code
 ```
 
 ---
 
-## 🚀 Guia de Instalação e Uso
+## 🚀 Installation & Usage
 
-### Pré-requisitos
+### Prerequisites
 
-- [Node.js](https://nodejs.org/) (versão 20 ou superior)
-- [pnpm](https://pnpm.io/) (versão 9 ou superior)
-- [Rust & Cargo](https://www.rust-lang.org/tools/install) (para compilação do Tauri 2)
+- [Node.js](https://nodejs.org/) (version 20 or higher)
+- [pnpm](https://pnpm.io/) (version 9 or higher)
+- [Rust & Cargo](https://www.rust-lang.org/tools/install) (for Tauri 2 compilation)
 
-### 1. Clonar e Instalar Dependências
+### 1. Clone and Install
 
 ```bash
-# Clone o repositório
 git clone git@github.com:diegojimenes/blueline.git
 cd blueline
-
-# Instale as dependências
 pnpm install
 ```
 
-### 2. Executar em Modo de Desenvolvimento
+### 2. Run in Development Mode
 
 ```bash
-# Executar a aplicação desktop completa (Tauri 2 + React):
+# Full desktop app (Tauri 2 + React):
 pnpm tauri dev
 
-# Ou executar apenas a interface web no navegador (com demo mockada):
+# Web interface only (with mocked demo):
 pnpm dev
 ```
 
-### 3. Abrindo um Repositório no BlueLine
+### 3. Opening a Repository
 
-1. Ao abrir o aplicativo, clique no botão **"Abrir"** no canto superior esquerdo ou use o seletor de diretório.
-2. O BlueLine irá escanear o projeto, construir o grafo estrutural e iniciar o watcher de arquivos em tempo real.
-3. No painel inferior de terminal, seu shell habitual estará pronto para rodar seu agente de IA (`claude`, `aider`, etc.) ou comandos de navegação (`goto`, `ls`, `query`).
+1. Click **"Open"** in the top-left corner or use the directory selector.
+2. BlueLine scans the project, builds the structural graph, and starts the real-time file watcher.
+3. In the terminal panel at the bottom, your shell is ready to run your AI agent (`claude`, `aider`, etc.) or navigation commands (`goto`, `ls`, `query`).
 
 ---
 
-## 🧪 Testes e Qualidade
-
-O projeto possui uma suíte completa de testes automatizados executados a cada commit no pipeline de CI:
+## 🧪 Testing & Quality
 
 ```bash
-# Executar todos os testes de unidade no frontend e core (178 testes Vitest)
+# Run all frontend and core unit tests (178 Vitest tests)
 pnpm test
 
-# Executar testes com relatório de cobertura (v8)
+# Run with coverage report (v8)
 pnpm test:coverage
 
-# Executar testes unitários do backend nativo Rust (8 testes Cargo)
+# Run native Rust backend unit tests (8 Cargo tests)
 cd src-tauri && cargo test
 
-# Checagem estrita de tipos e linter
+# Strict type checking and linter
 pnpm typecheck
 pnpm lint
 ```
 
-**Status Atual dos Testes:**
-- ✅ **178 testes Vitest** passando (100% verde)
-- ✅ **8 testes Cargo (Rust)** passando (100% verde)
-- ✅ Typecheck TypeScript (`tsc --noEmit`) e ESLint 100% livres de erros
+**Current Test Status:**
+- ✅ **178 Vitest tests** passing (100% green)
+- ✅ **8 Cargo (Rust) tests** passing (100% green)
+- ✅ TypeScript typecheck (`tsc --noEmit`) and ESLint 100% error-free
 
 ---
 
-## 🏆 Marcos Implementados (M0–M13)
+## 🏆 Implemented Milestones (M0–M13)
 
-- [x] **M0 — Fundação**: Setup Tauri 2 + React 19 + TypeScript estrito + Vitest + CI.
-- [x] **M1 — Parse & Modelo**: Parser Tree-Sitter WASM incremental, normalização de grafo e serialização canônica.
-- [x] **M2 — Grafo & Zoom Semântico**: Layout determinístico por níveis, canvas com culling, navegação por portais e histórico.
-- [x] **M3 — Layout IDE & Lentes**: Painéis de Explorer, Inspector e Canvas com lentes de Camadas, Domínio e Acoplamento.
-- [x] **M4 — Terminal Real**: Integração de xterm.js com PTY Rust (`portable-pty`) e interceptação de comandos.
-- [x] **M5 — Live Updates**: Watcher `notify` com debounce, re-parse incremental, diff e pulso visual.
-- [x] **M5.1 — UX Refinada & Níveis 4/5**: Inspeção de métodos, funções aninhadas/locais, arestas limpas e integração com Git.
-- [x] **M6 — Persistência de Sessão**: Salva e restaura trilhas, foco e histórico com validação de consistência no disco.
-- [x] **M7 — Busca Fuzzy Global**: QuickSearch modal com atalhos `Ctrl+P`/`Cmd+P`/`/` e filtro $O(1)$.
-- [x] **M8 & M9 — Diff & Snapshots**: Diff visual unificado no Inspector e `computeGraphDiff` para auditoria estrutural.
-- [x] **M10 — Protocolo de Agente**: Extração passiva de contexto de símbolos/chamadas para prompts e notificação visual de atenção.
-- [x] **M11 — Extensibilidade Multi-Linguagem**: Suporte a repositórios Python (`.py`/`.pyi`) via `CompositeParser`.
-- [x] **M12 — Performance & Cache**: Spatial Grid Hash para culling a 60 FPS e `GraphCacheStorage` para repositórios gigantes.
-- [x] **M13 — Query Graph & Multi-Projeto**: Motor de consultas estruturadas (`query kind:class layer:domain`) e suporte a workspaces.
+- [x] **M0 — Foundation**: Tauri 2 + React 19 + strict TypeScript + Vitest + CI.
+- [x] **M1 — Parse & Model**: Incremental Tree-Sitter WASM parser, graph normalization, and canonical serialization.
+- [x] **M2 — Graph & Semantic Zoom**: Deterministic layout by levels, canvas with culling, portal navigation, and history.
+- [x] **M3 — IDE Layout & Views**: Explorer, Inspector, and Canvas panels with Layers, Domain, and Coupling views.
+- [x] **M4 — Real Terminal**: xterm.js integration with Rust PTY (`portable-pty`) and command interception.
+- [x] **M5 — Live Updates**: `notify` watcher with debounce, incremental re-parse, diff, and visual pulse.
+- [x] **M5.1 — Refined UX & Levels 4/5**: Method inspection, nested/local functions, clean edges, and Git integration.
+- [x] **M6 — Session Persistence**: Saves and restores trails, focus, and history with consistency validation on disk.
+- [x] **M7 — Global Fuzzy Search**: QuickSearch modal with `Ctrl+P`/`Cmd+P`/`/` shortcuts and O(1) filter.
+- [x] **M8 & M9 — Diff & Snapshots**: Unified visual diff in Inspector and `computeGraphDiff` for structural audit.
+- [x] **M10 — Agent Protocol**: Passive context extraction of symbols/calls for prompts and visual attention notification.
+- [x] **M11 — Multi-Language Extensibility**: Python repository support (`.py`/`.pyi`) via `CompositeParser`.
+- [x] **M12 — Performance & Cache**: Spatial Grid Hash for 60 FPS culling and `GraphCacheStorage` for large repos.
+- [x] **M13 — Query Graph & Multi-Project**: Structured query engine (`query kind:class layer:domain`) and workspace support.
 
 ---
 
 ## 🗺️ Roadmap (M14+)
 
-Planejamento para as próximas versões do BlueLine:
+Planned for upcoming versions, prioritized by architectural impact:
 
-- [ ] **M14 — Clusters Semânticos & Persistência de Visões (`save-view` / `load-view`)**:
-  - Salvar conjuntos de nós e símbolos focados durante uma investigação de bug ou refatoração complexa.
-  - Carregar visões salvas instantaneamente no Canvas para alternar entre diferentes fluxos de trabalho sem perder o contexto cognitivo.
-- [ ] **M15 — Exportação Arquitetural e Relatórios**:
-  - Exportação de diagramas estruturais em SVG vetorial e resumos arquiteturais em Markdown para documentação de PRs e ADRs.
-- [ ] **M16 — Métricas de Complexidade e Impacto**:
-  - Cálculo visual de complexidade ciclomática e raio de impacto estrutural ao modificar classes centrais.
+- [ ] **M14 — Impact View**: Given a modified symbol, show its full blast radius — direct dependencies, dependents (callers), affected modules, and propagation depth. Cascade highlight in the canvas.
+- [ ] **M15 — Change Summary**: Deterministic structural summary from `GraphDiff`: symbols added/modified/removed, dependencies added/removed, affected modules, impact level (LOW/MEDIUM/HIGH). With `[ Copy Context for Agent ]` button.
+- [ ] **M16 — Extended Query Commands**: `impact <symbol>`, `deps <symbol>`, `dependents <symbol>`, `changed --since HEAD`, `trace <symbol.method>`.
+- [ ] **M17 — Saved Views**: Persist named filter/view states for fast switching between investigation contexts.
+- [ ] **M18 — Architectural Reports**: SVG diagram export and Markdown architectural summaries for PR and ADR documentation.
 
 ---
 
-## 📄 Licença
+## 📄 License
 
-Distribuído sob a licença **MIT**. Consulte o arquivo `LICENSE` para mais informações.
+Distributed under the **MIT** License. See `LICENSE` for more information.

@@ -50,7 +50,7 @@ describe("QuickSearch · busca fuzzy global (M7)", () => {
     const user = userEvent.setup();
     render(<QuickSearch open={true} onClose={() => {}} />);
 
-    const input = screen.getByLabelText("Buscar símbolos no projeto");
+    const input = screen.getByLabelText("Search symbols in project");
     await user.type(input, "verify");
 
     expect(screen.getByText("verifyPassword")).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe("QuickSearch · busca fuzzy global (M7)", () => {
     const onClose = vi.fn();
     render(<QuickSearch open={true} onClose={onClose} />);
 
-    const input = screen.getByLabelText("Buscar símbolos no projeto");
+    const input = screen.getByLabelText("Search symbols in project");
     await user.type(input, "verify");
     await user.keyboard("{Enter}");
 
@@ -76,7 +76,7 @@ describe("QuickSearch · busca fuzzy global (M7)", () => {
     const onClose = vi.fn();
     render(<QuickSearch open={true} onClose={onClose} />);
 
-    const input = screen.getByLabelText("Buscar símbolos no projeto");
+    const input = screen.getByLabelText("Search symbols in project");
     await user.type(input, "{Escape}");
 
     expect(onClose).toHaveBeenCalled();

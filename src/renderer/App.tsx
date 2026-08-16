@@ -9,6 +9,7 @@ import { StatusBar } from "./components/StatusBar";
 import { Terminal } from "./components/Terminal";
 import { flushSession, useStore } from "./store";
 import { setupWatcher } from "./watcher";
+import { useTranslation } from "./i18n";
 
 export default function App() {
   const theme = useStore((s) => s.theme);
@@ -17,12 +18,13 @@ export default function App() {
   const openProjectDialog = useStore((s) => s.openProjectDialog);
   const restoreSession = useStore((s) => s.restoreSession);
   const [searchOpen, setSearchOpen] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Atalho global para busca de símbolos (M7: Ctrl+P / ⌘P / Ctrl+K)
+  // Global shortcut for symbol search (M7: Ctrl+P / ⌘P / Ctrl+K)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P" || e.key === "k" || e.key === "K")) {
@@ -34,12 +36,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Restaurar sessão salva (M6): tema/lente + reabre o último projeto.
+  // Restore saved session (M6): theme/lens + reopen last project.
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
 
-  // Persistência imediata no fechamento da janela (M6).
+  // Immediate persistence on window close (M6).
   useEffect(() => {
     const onUnload = () => {
       flushSession();
@@ -52,7 +54,7 @@ export default function App() {
     };
   }, []);
 
-  // Barramento do watcher (M5): um único listener por janela.
+  // Watcher bus (M5): single listener per window.
   useEffect(() => {
     if (!isTauri()) return;
     let unlisten: (() => void) | null = null;
@@ -69,21 +71,21 @@ export default function App() {
       <header className="app-header">
         {isTauri() && (
           <button type="button" className="btn-open" onClick={() => void openProjectDialog()}>
-            Abrir
+            {t("btn_open")}
           </button>
         )}
         <button
           type="button"
           className="btn-open"
           onClick={() => setSearchOpen(true)}
-          title="Buscar símbolos (Ctrl+P / ⌘P)"
-          aria-label="Buscar símbolos"
+          title={t("btn_search_title")}
+          aria-label={t("btn_search_aria")}
         >
-          🔍 Buscar
+          🔍 {t("btn_search")}
         </button>
         <span className="app-title">BlueLine</span>
         {projectPath && <span className="app-project">{projectPath}</span>}
-        <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label="Alternar tema">
+        <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label={t("btn_toggle_theme_aria")}>
           {theme === "dark" ? "☀" : "◐"}
         </button>
       </header>

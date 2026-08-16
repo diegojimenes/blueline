@@ -12,8 +12,8 @@ describe("StatusBar", () => {
   it("mostra nível e lente atuais", () => {
     useStore.setState({ level: 2, lens: "coupling" });
     render(<StatusBar />);
-    expect(screen.getByText("nível 2")).toBeInTheDocument();
-    expect(screen.getByText("lente coupling")).toBeInTheDocument();
+    expect(screen.getByText("level 2")).toBeInTheDocument();
+    expect(screen.getByText("view coupling")).toBeInTheDocument();
   });
 
   it("mostra o caminho humano do foco", () => {
@@ -22,9 +22,9 @@ describe("StatusBar", () => {
     expect(screen.getByText("pedidos")).toBeInTheDocument();
   });
 
-  it("mostra 'sistema' sem foco ou sem grafo", () => {
+  it("mostra 'system' sem foco ou sem grafo", () => {
     render(<StatusBar />);
-    expect(screen.getByText("sistema")).toBeInTheDocument();
+    expect(screen.getByText("system")).toBeInTheDocument();
   });
 
   it("mostra indicador de atenção do agente quando ativo (M10)", () => {

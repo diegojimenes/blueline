@@ -1,5 +1,6 @@
 import { canonicalPathOf } from "../../core";
 import { useStore } from "../store";
+import { useTranslation } from "../i18n";
 
 export function StatusBar() {
   const level = useStore((s) => s.level);
@@ -12,16 +13,25 @@ export function StatusBar() {
   const gitDirty = useStore((s) => s.gitDirty);
   const agentAttention = useStore((s) => s.agentAttention);
   const revision = graph?.revision ?? 0;
+  const { t, tp } = useTranslation();
 
-  const path = focus && graph ? canonicalPathOf(graph, focus) : "sistema";
+  const path = focus && graph ? canonicalPathOf(graph, focus) : "system";
   const watcherText =
-    watcherState === "off" ? "watcher: —" : watcherState === "active" ? "watcher: ativo" : `watcher: atualizado ${watcherTime ?? ""}`;
-  const gitText = !gitRepo ? "git: —" : gitDirty.length === 0 ? "git: limpo" : `git: ${gitDirty.length} alterado${gitDirty.length === 1 ? "" : "s"}`;
+    watcherState === "off"
+      ? t("status_watcher_off")
+      : watcherState === "active"
+        ? t("status_watcher_active")
+        : t("status_watcher_updated", { time: watcherTime ?? "" });
+  const gitText = !gitRepo
+    ? t("status_git_none")
+    : gitDirty.length === 0
+      ? t("status_git_clean")
+      : tp("status_git_dirty", gitDirty.length);
 
   return (
     <footer className="statusbar">
-      <span className="status-segment">nível {level}</span>
-      <span className="status-segment">lente {lens}</span>
+      <span className="status-segment">{t("status_level", { level })}</span>
+      <span className="status-segment">{t("status_view", { lens })}</span>
       <span className="status-segment status-path">{path}</span>
       {agentAttention && (
         <span className="status-segment status-agent">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type Ref, type ReactNode } from "react";
 import { ancestorChain, moduleOfPath, type NodeId, type SerializedNode } from "../../core";
 import { useStore } from "../store";
+import { useTranslation } from "../i18n";
 
 export function Explorer() {
   const graph = useStore((s) => s.graph);
@@ -9,6 +10,7 @@ export function Explorer() {
   const selected = useStore((s) => s.selected);
   const gotoId = useStore((s) => s.gotoId);
   const gitDirty = useStore((s) => s.gitDirty);
+  const { t, tp } = useTranslation();
 
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(["project"]));
   const selectedRef = useRef<HTMLLIElement | null>(null);
@@ -69,7 +71,7 @@ export function Explorer() {
       <section className="panel panel-explorer" aria-label="Explorer">
         <div className="panel-title">Explorer</div>
         <div className="panel-body explorer-body">
-          <p className="placeholder">Nenhum projeto aberto</p>
+          <p className="placeholder">{t("explorer_no_project")}</p>
         </div>
       </section>
     );
@@ -81,7 +83,7 @@ export function Explorer() {
       <div className="panel-title">
         <span>Explorer</span>
         {gitDirty.length > 0 && (
-          <span className="badge badge-amber">{gitDirty.length} modificado{gitDirty.length === 1 ? "" : "s"}</span>
+          <span className="badge badge-amber">{tp("explorer_modified", gitDirty.length)}</span>
         )}
       </div>
       <div className="panel-body explorer-body">
@@ -213,6 +215,7 @@ function TreeItem({
 }: TreeItemProps) {
   const kindClass = `tree-item tree-kind-${node.kind}`;
   const icon = getSemanticIcon(node.kind);
+  const { t } = useTranslation();
 
   return (
     <li className={kindClass} role="treeitem" aria-selected={isSelected} ref={innerRef}>
@@ -224,14 +227,14 @@ function TreeItem({
           type="button"
           className={hasChildren ? "tree-toggle" : "tree-toggle tree-toggle-empty"}
           onClick={onToggle}
-          aria-label={expanded ? "recolher" : "expandir"}
+          aria-label={expanded ? t("explorer_collapse") : t("explorer_expand")}
         >
           {hasChildren ? (expanded ? "▾" : "▸") : ""}
         </button>
         <button type="button" className="tree-label" onClick={onSelect}>
           <span className="tree-item-icon">{icon}</span>
           <span className="tree-item-text">{label}</span>
-          {dirty && <span className="tree-dirty" title="arquivo modificado">⚡</span>}
+          {dirty && <span className="tree-dirty" title={t("explorer_dirty_file")}>⚡</span>}
         </button>
       </div>
       {expanded && hasChildren && <ul role="group">{children}</ul>}

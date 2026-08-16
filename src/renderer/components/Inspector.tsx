@@ -11,6 +11,7 @@ import {
 } from "../../core";
 import { lensColor } from "../palette";
 import { useStore } from "../store";
+import { useTranslation } from "../i18n";
 import {
   highlightCodeLine,
   parseCleanDiff,
@@ -32,17 +33,18 @@ export function Inspector() {
   const setReviewScope = useStore((s) => s.setReviewScope);
   const gotoId = useStore((s) => s.gotoId);
   const enterNode = useStore((s) => s.enterNode);
+  const { t, tp } = useTranslation();
 
   const targetId = selected ?? focus;
   const node = targetId && graph ? graph.nodes.find((n) => n.id === targetId) : undefined;
 
-  // Se estiver no nível de sistema ou nenhum nó selecionado, exibe o Dashboard Arquitetural
+  // System level or no node selected: show Architectural Dashboard
   if (!graph || !node || node.kind === "project") {
     return (
       <section className="panel panel-inspector" aria-label="Inspector">
         <div className="panel-title">
-          <span>🏛️ Arquitetura & Sistema</span>
-          <span className="badge badge-level">nível 1</span>
+          <span>{t("inspector_arch_title")}</span>
+          <span className="badge badge-level">{t("inspector_level", { level: 1 })}</span>
         </div>
         <div className="panel-body inspector-body">
           {graph ? (
@@ -54,7 +56,7 @@ export function Inspector() {
               onSelectNode={enterNode}
             />
           ) : (
-            <p className="placeholder">Abra um projeto para inspecionar métricas e arquitetura</p>
+            <p className="placeholder">{t("inspector_open_project")}</p>
           )}
         </div>
       </section>
@@ -82,44 +84,44 @@ export function Inspector() {
           <span className={`symbol-badge badge-${node.kind}`}>{kindLabel(node.kind)}</span>
           <span className="inspector-kind-title">{node.name}</span>
           {isSecondary && (
-            <span className="badge badge-secondary-class" title="Classe secundária declarada no mesmo arquivo">
-              interna
+            <span className="badge badge-secondary-class" title={t("inspector_internal")}>
+              {t("inspector_internal")}
             </span>
           )}
         </div>
-        <span className="badge badge-level">nível {level}</span>
+        <span className="badge badge-level">{t("inspector_level", { level })}</span>
       </div>
 
       <div className="panel-body inspector-body">
-        {/* Banner de Revisão / Modificação por IA / Git */}
+        {/* Review / AI modification / Git banner */}
         {isReviewed ? (
           <div className="ai-reviewed-banner">
             <div className="ai-reviewed-header">
-              <span className="ai-reviewed-badge">✓ REVISADO NESTA SESSÃO</span>
+              <span className="ai-reviewed-badge">{t("inspector_reviewed_badge")}</span>
               <button
                 type="button"
                 className="btn-review-toggle reviewed"
                 onClick={() => toggleReviewed(node.id)}
               >
-                Desmarcar
+                {t("inspector_unmark")}
               </button>
             </div>
             <span className="ai-reviewed-desc">
-              Este símbolo foi validado pelo desenvolvedor.
+              {t("inspector_reviewed_desc")}
             </span>
           </div>
         ) : isDirty ? (
           <div className={`ai-dirty-banner ${diffInfo?.magnitude ? `mag-${diffInfo.magnitude}` : ""}`}>
             <div className="ai-dirty-header">
               <div className="ai-dirty-tags">
-                <span className="ai-dirty-badge">⚡ MODIFICADO</span>
+                <span className="ai-dirty-badge">{t("inspector_modified_badge")}</span>
                 {diffInfo && (
                   <span className={`badge-magnitude mag-${diffInfo.magnitude}`}>
                     {diffInfo.magnitude === "heavy"
-                      ? "Crítico (>20L)"
+                      ? t("inspector_magnitude_heavy")
                       : diffInfo.magnitude === "medium"
-                        ? "Médio (6-20L)"
-                        : "Leve (≤5L)"}
+                        ? t("inspector_magnitude_medium")
+                        : t("inspector_magnitude_light")}
                   </span>
                 )}
               </div>
@@ -128,31 +130,31 @@ export function Inspector() {
                 className="btn-review-toggle"
                 onClick={() => toggleReviewed(node.id)}
               >
-                ✓ Marcar como Revisado
+                {t("inspector_mark_reviewed")}
               </button>
             </div>
             <div className="ai-dirty-desc-row">
               <span className="ai-dirty-desc">
                 {diffInfo
-                  ? `+${diffInfo.additions} -${diffInfo.deletions} (${diffInfo.totalLinesChanged} linhas alteradas via AST)`
-                  : "Arquivo com alterações em relação ao repositório base"}
+                  ? t("inspector_diff_ast", { additions: diffInfo.additions, deletions: diffInfo.deletions, total: diffInfo.totalLinesChanged })
+                  : t("inspector_file_changed")}
               </span>
               <div className="review-scope-switch">
                 <button
                   type="button"
                   className={`btn-scope ${reviewScope === "local" ? "active" : ""}`}
                   onClick={() => setReviewScope("local")}
-                  title="Foco de revisão no nó local"
+                  title={t("inspector_scope_local_title")}
                 >
-                  Local
+                  {t("inspector_scope_local")}
                 </button>
                 <button
                   type="button"
                   className={`btn-scope ${reviewScope === "project" ? "active" : ""}`}
                   onClick={() => setReviewScope("project")}
-                  title="Visão de revisão do projeto todo"
+                  title={t("inspector_scope_project_title")}
                 >
-                  Projeto
+                  {t("inspector_scope_project")}
                 </button>
               </div>
             </div>
@@ -167,36 +169,36 @@ export function Inspector() {
 
           <div className="symbol-meta-grid">
             <div className="meta-pill">
-              <span className="meta-label">CAMADA</span>
+              <span className="meta-label">{t("inspector_layer")}</span>
               <span className="meta-value" style={{ color: lensColor(`layer:${layer}`) }}>
                 {layer}
               </span>
             </div>
             <div className="meta-pill">
-              <span className="meta-label">DOMÍNIO</span>
+              <span className="meta-label">{t("inspector_domain")}</span>
               <span className="meta-value" style={{ color: lensColor(`domain:${domain}`) }}>
                 {domain}
               </span>
             </div>
             {("startLine" in node) && (
               <div className="meta-pill">
-                <span className="meta-label">LINHA</span>
+                <span className="meta-label">{t("inspector_line")}</span>
                 <span className="meta-value mono">:L{node.startLine}{node.endLine ? `-L${node.endLine}` : ""}</span>
               </div>
             )}
             {node.kind === "module" && (
               <div className="meta-pill">
-                <span className="meta-label">CLASSES</span>
+                <span className="meta-label">{t("inspector_classes")}</span>
                 <span className="meta-value mono">{classesOf(graph, node).length}</span>
               </div>
             )}
           </div>
 
-          {/* Medidor Visual de Acoplamento */}
+          {/* Structural Coupling meter */}
           <div className="coupling-meter-container">
             <div className="coupling-meter-header">
-              <span>Acoplamento Estrutural</span>
-              <strong style={{ color: couplingColor(coupling) }}>{coupling} dependência{coupling === 1 ? "" : "s"}</strong>
+              <span>{t("inspector_coupling")}</span>
+              <strong style={{ color: couplingColor(coupling) }}>{tp("inspector_coupling", coupling)}</strong>
             </div>
             <div className="coupling-progress-bar">
               <div
@@ -241,11 +243,12 @@ function SystemDashboard({
   onSelectNode: (id: string) => void;
 }) {
   const config = useStore.getState().config;
+  const { t, tp } = useTranslation();
   const modules = graph.nodes.filter((n) => n.kind === "module");
   const classes = graph.nodes.filter((n) => n.kind === "class");
   const methods = graph.nodes.filter((n) => n.kind === "method");
 
-  // Classes / Símbolos estruturais afetados
+  // Structural classes/symbols affected
   const dirtyClasses = useMemo(() => {
     return graph.nodes.filter(
       (n): n is Extract<typeof n, { kind: "class" }> =>
@@ -253,7 +256,7 @@ function SystemDashboard({
     );
   }, [graph, gitDirty, diffSummary]);
 
-  // Agrupamento de impacto por camada
+  // Layer impact grouping
   const layerImpact = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of dirtyClasses) {
@@ -274,32 +277,32 @@ function SystemDashboard({
           <span className="stat-icon">📦</span>
           <div className="stat-info">
             <span className="stat-value">{modules.length}</span>
-            <span className="stat-label">Módulos</span>
+            <span className="stat-label">{t("stat_modules")}</span>
           </div>
         </div>
         <div className="stat-card">
           <span className="stat-icon">🏛️</span>
           <div className="stat-info">
             <span className="stat-value">{classes.length}</span>
-            <span className="stat-label">Classes</span>
+            <span className="stat-label">{t("stat_classes")}</span>
           </div>
         </div>
         <div className="stat-card">
           <span className="stat-icon">⚡</span>
           <div className="stat-info">
             <span className="stat-value">{methods.length}</span>
-            <span className="stat-label">Métodos</span>
+            <span className="stat-label">{t("stat_methods")}</span>
           </div>
         </div>
       </div>
 
-      {/* Barra de Progresso da Revisão de Código */}
+      {/* Review Progress Bar */}
       {dirtyClasses.length > 0 && (
         <div className="dashboard-section">
           <div className="dashboard-section-header">
-            <h3>📋 Progresso de Revisão</h3>
+            <h3>{t("inspector_review_progress")}</h3>
             <span className="badge badge-emerald">
-              {reviewedCount} de {dirtyClasses.length} validados ({reviewProgressPct}%)
+              {t("inspector_review_progress_count", { reviewed: reviewedCount, total: dirtyClasses.length, pct: reviewProgressPct })}
             </span>
           </div>
           <div className="review-progress-track">
@@ -311,12 +314,12 @@ function SystemDashboard({
         </div>
       )}
 
-      {/* Mapa de Impacto por Camadas */}
+      {/* Layer Impact Map */}
       {layerImpact.length > 0 && (
         <div className="dashboard-section">
           <div className="dashboard-section-header">
-            <h3>🌐 Impacto por Camada</h3>
-            <span className="badge badge-amber">{layerImpact.length} camadas tocadas</span>
+            <h3>{t("inspector_layer_impact")}</h3>
+            <span className="badge badge-amber">{tp("inspector_layers_touched", layerImpact.length)}</span>
           </div>
           <div className="layer-impact-grid">
             {layerImpact.map(([layerName, count]) => (
@@ -326,25 +329,25 @@ function SystemDashboard({
                   style={{ backgroundColor: lensColor(`layer:${layerName}`) }}
                 />
                 <span className="layer-impact-name">{layerName}</span>
-                <span className="layer-impact-count">{count} {count === 1 ? "classe" : "classes"}</span>
+                <span className="layer-impact-count">{tp("inspector_layer_classes", count)}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Classes Estruturais Afetadas */}
+      {/* Structural Symbols with Changes */}
       <div className="dashboard-section">
         <div className="dashboard-section-header">
-          <h3>🏛️ Símbolos com Alterações</h3>
-          <span className="badge badge-amber">{dirtyClasses.length} nós</span>
+          <h3>{t("inspector_symbols_changed")}</h3>
+          <span className="badge badge-amber">{t("inspector_symbols_count", { count: dirtyClasses.length })}</span>
         </div>
 
         {dirtyClasses.length === 0 ? (
           <p className="placeholder-subtle">
             {gitDirty.length > 0
-              ? `${gitDirty.length} arquivos não-estruturais modificados.`
-              : "Nenhum nó de código modificado no momento."}
+              ? t("inspector_non_structural", { count: gitDirty.length })
+              : t("inspector_no_modified")}
           </p>
         ) : (
           <div className="dirty-files-list">
@@ -367,10 +370,10 @@ function SystemDashboard({
                   <div className="dirty-file-info">
                     <span className="dirty-file-name">
                       {cls.name}
-                      {cls.isSecondary && <span className="tag-secondary-mini">interna</span>}
+                      {cls.isSecondary && <span className="tag-secondary-mini">{t("inspector_internal")}</span>}
                     </span>
                     <span className="dirty-file-path">
-                      {cls.file.split("/").pop()} • {methodsCount} métodos
+                      {cls.file.split("/").pop()} • {methodsCount} {t("stat_methods").toLowerCase()}
                       {symDiff && ` • +${symDiff.additions} -${symDiff.deletions}`}
                     </span>
                   </div>
@@ -397,10 +400,10 @@ function SystemDashboard({
         )}
       </div>
 
-      {/* Módulos do Sistema */}
+      {/* Project Modules */}
       <div className="dashboard-section">
         <div className="dashboard-section-header">
-          <h3>📦 Módulos do Projeto</h3>
+          <h3>{t("inspector_project_modules")}</h3>
         </div>
         <div className="modules-chips-grid">
           {modules.map((m) => (
@@ -429,16 +432,17 @@ function ImpactAlert({
   isDirty: boolean;
 }) {
   const incoming = graph.edges.filter((e) => e.type === "call" && e.to === node.id);
+  const { t, tp } = useTranslation();
   if (!isDirty && incoming.length === 0) return null;
 
   return (
     <div className={`impact-alert-box ${isDirty && incoming.length > 0 ? "impact-critical" : ""}`}>
       <span className="impact-icon">{isDirty && incoming.length > 0 ? "⚠️" : "ℹ️"}</span>
       <div className="impact-text">
-        <strong>Radar de Impacto:</strong>{" "}
+        <strong>{t("inspector_impact_radar")}</strong>{" "}
         {incoming.length > 0
-          ? `${incoming.length} símbolo${incoming.length === 1 ? "" : "s"} depende${incoming.length === 1 ? "m" : "m"} diretamente desta função.`
-          : "Nenhum chamador interno direto detectado."}
+          ? tp("inspector_callers", incoming.length)
+          : t("inspector_no_callers")}
       </div>
     </div>
   );
@@ -455,6 +459,7 @@ function CallCards({
 }) {
   const out = graph.edges.filter((e) => e.type === "call" && e.from === node.id);
   const incoming = graph.edges.filter((e) => e.type === "call" && e.to === node.id);
+  const { t } = useTranslation();
   if (out.length === 0 && incoming.length === 0) return null;
 
   return (
@@ -462,7 +467,7 @@ function CallCards({
       {out.length > 0 && (
         <div className="calls-group">
           <div className="calls-group-title">
-            <span>↓ Chama ({out.length})</span>
+            <span>{t("inspector_calls_out", { count: out.length })}</span>
           </div>
           <div className="call-cards-list">
             {out.map((e) => (
@@ -483,7 +488,7 @@ function CallCards({
       {incoming.length > 0 && (
         <div className="calls-group">
           <div className="calls-group-title">
-            <span>↑ Chamado por ({incoming.length})</span>
+            <span>{t("inspector_calls_in", { count: incoming.length })}</span>
           </div>
           <div className="call-cards-list">
             {incoming.map((e) => (
@@ -512,6 +517,7 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
   const [source, setSource] = useState<string | null>(null);
   const [diffText, setDiffText] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const { t } = useTranslation();
 
   const focusedLineRef = useRef<HTMLDivElement | null>(null);
   const focusedDiffRef = useRef<HTMLDivElement | null>(null);
@@ -579,7 +585,7 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
   }, [tab, parsedDiff, startLine]);
 
   if (!projectPath || error) {
-    return <p className="placeholder code-missing">Código-fonte não disponível no diretório</p>;
+    return <p className="placeholder code-missing">{t("inspector_code_missing")}</p>;
   }
 
   const hasDiff = parsedDiff.hunks.length > 0;
@@ -594,14 +600,14 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
             className={`inspector-tab ${tab === "code" ? "active" : ""}`}
             onClick={() => setTab("code")}
           >
-            📄 Código
+            {t("inspector_tab_code")}
           </button>
           <button
             type="button"
             className={`inspector-tab ${tab === "diff" ? "active" : ""}`}
             onClick={() => setTab("diff")}
           >
-            ⚡ Diff {hasDiff && <span className="tab-badge-dirty">●</span>}
+            {t("inspector_tab_diff")} {hasDiff && <span className="tab-badge-dirty">●</span>}
           </button>
           {hasDiff && (
             <button
@@ -609,7 +615,7 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
               className={`inspector-tab ${tab === "split" ? "active" : ""}`}
               onClick={() => setTab("split")}
             >
-              ☷ Split
+              {t("inspector_tab_split")}
             </button>
           )}
         </div>
@@ -625,19 +631,19 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
             type="button"
             className={`btn-wrap-toggle ${wordWrap ? "active" : ""}`}
             onClick={() => setWordWrap(!wordWrap)}
-            title={wordWrap ? "Desativar quebra automática de linhas" : "Ativar quebra automática de linhas (Word-Wrap)"}
-            aria-label="Quebrar linhas"
+            title={wordWrap ? t("inspector_wrap_on_title") : t("inspector_wrap_off_title")}
+            aria-label={t("inspector_wrap_aria")}
           >
-            ↩ Wrap
+            {t("inspector_wrap")}
           </button>
           <button
             type="button"
             className="btn-expand-code"
             onClick={() => openCodeModal(tab)}
-            title="Expandir código e diff em tela cheia (fora da lateral)"
-            aria-label="Expandir código e diff"
+            title={t("inspector_expand_title")}
+            aria-label={t("inspector_expand_aria")}
           >
-            ⤢ Expandir
+            {t("inspector_expand")}
           </button>
         </div>
       </div>
@@ -646,7 +652,7 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
       <div className={`code-viewer-wrapper ${wordWrap ? "wrap-lines" : ""}`}>
         {tab === "code" ? (
           source === null ? (
-            <p className="placeholder">Carregando código…</p>
+            <p className="placeholder">{t("inspector_loading")}</p>
           ) : (
             <div className="code-block-container">
               {source.split("\n").map((line, i) => {
@@ -670,7 +676,7 @@ function CodeAndDiffView({ file, startLine }: { file: string; startLine: number 
         ) : tab === "diff" ? (
           !hasDiff ? (
             <div className="diff-clean-placeholder">
-              <span>✓ Sem alterações pendentes em relação ao HEAD</span>
+              <span>{t("inspector_no_diff")}</span>
             </div>
           ) : (
             <div className="diff-hunks-container">

@@ -16,8 +16,8 @@ describe("App (layout M0)", () => {
     expect(screen.getByLabelText("Inspector")).toBeInTheDocument();
     expect(screen.getByLabelText("Terminal")).toBeInTheDocument();
     const statusbar = within(screen.getByRole("contentinfo"));
-    expect(statusbar.getByText("nível 1")).toBeInTheDocument();
-    expect(statusbar.getByText("lente layers")).toBeInTheDocument();
+    expect(statusbar.getByText("level 1")).toBeInTheDocument();
+    expect(statusbar.getByText("view layers")).toBeInTheDocument();
   });
 
   it("aplica o tema no atributo data-theme da raiz", () => {
@@ -28,7 +28,7 @@ describe("App (layout M0)", () => {
   it("alterna tema ao clicar no toggle", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByLabelText("Alternar tema"));
+    await user.click(screen.getByLabelText("Toggle theme"));
     expect(document.documentElement.dataset.theme).toBe("light");
     useStore.setState({ theme: "dark" });
   });

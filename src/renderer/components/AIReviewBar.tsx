@@ -1,18 +1,20 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { useTranslation } from "../i18n";
 
 export function AIReviewBar() {
   const graph = useStore((s) => s.graph);
   const gitDirty = useStore((s) => s.gitDirty);
   const agentAttention = useStore((s) => s.agentAttention);
   const enterNode = useStore((s) => s.enterNode);
+  const { t, tp } = useTranslation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scope, setScope] = useState<"scoped" | "project">("scoped");
   const focus = useStore((s) => s.focus);
   const level = useStore((s) => s.level);
 
-  // Símbolos afetados por arquivos em gitDirty
+  // Symbols affected by files in gitDirty
   const allDirtyNodes = useMemo(() => {
     if (!graph || gitDirty.length === 0) return [];
     return graph.nodes.filter(
@@ -20,7 +22,7 @@ export function AIReviewBar() {
     );
   }, [graph, gitDirty]);
 
-  // Símbolos afetados dentro do foco/escopo atual
+  // Symbols affected within the current focus/scope
   const scopedDirtyNodes = useMemo(() => {
     if (!focus || allDirtyNodes.length === 0) return allDirtyNodes;
     return allDirtyNodes.filter((n) => {
@@ -57,17 +59,17 @@ export function AIReviewBar() {
   };
 
   return (
-    <div className="ai-review-bar" role="region" aria-label="Revisão de Alterações de IA">
+    <div className="ai-review-bar" role="region" aria-label={t("ai_review_aria")}>
       <div className="ai-review-left">
         <span className="ai-review-badge">
           <span className="ai-pulse-dot" />
-          ⚡ Modo Revisão IA
+          {t("ai_review_badge")}
         </span>
         <span className="ai-review-summary">
-          <strong>{gitDirty.length}</strong> arquivo{gitDirty.length === 1 ? "" : "s"} modificado{gitDirty.length === 1 ? "" : "s"}
+          <strong>{gitDirty.length}</strong> {tp("ai_files_modified", gitDirty.length)}
           {allDirtyNodes.length > 0 && (
             <span className="ai-review-symbols-count">
-              {" "}• <strong>{allDirtyNodes.length}</strong> símbolo{allDirtyNodes.length === 1 ? "" : "s"} tocado{allDirtyNodes.length === 1 ? "" : "s"}
+              {" "}• <strong>{allDirtyNodes.length}</strong> {tp("ai_symbols_touched", allDirtyNodes.length)}
             </span>
           )}
         </span>
@@ -89,38 +91,41 @@ export function AIReviewBar() {
               type="button"
               className={`btn btn-scope-toggle ${scope === "scoped" ? "active" : ""}`}
               onClick={toggleScope}
-              title={scope === "scoped" ? "Alternar para navegar no projeto inteiro" : "Alternar para navegar apenas no escopo atual"}
+              title={scope === "scoped" ? t("ai_scope_local_title") : t("ai_scope_project_title")}
             >
-              {scope === "scoped" ? "🎯 Neste Escopo" : "🌐 No Projeto"}
+              {scope === "scoped" ? t("ai_scope_local") : t("ai_scope_project")}
             </button>
           )}
           <button
             type="button"
             className="btn btn-ai-step"
             onClick={handlePrev}
-            title="Navegar para o símbolo modificado anterior"
+            title={t("ai_prev_title")}
           >
-            ◀ Anterior
+            {t("ai_prev")}
           </button>
-          <span className="ai-step-counter" title={scope === "scoped" && hasScopeChoice ? "Posição no escopo atual" : "Posição no projeto"}>
+          <span
+            className="ai-step-counter"
+            title={scope === "scoped" && hasScopeChoice ? t("ai_scope_counter_title_local") : t("ai_scope_counter_title_project")}
+          >
             {currentIndex + 1} / {activeNodes.length}
-            {scope === "scoped" && hasScopeChoice && <span className="scope-tag"> local</span>}
+            {scope === "scoped" && hasScopeChoice && <span className="scope-tag"> {t("ai_scope_tag")}</span>}
           </span>
           <button
             type="button"
             className="btn btn-ai-step"
             onClick={handleNext}
-            title="Navegar para o próximo símbolo modificado"
+            title={t("ai_next_title")}
           >
-            Próximo ▶
+            {t("ai_next")}
           </button>
           <button
             type="button"
             className="btn btn-ai-expand-diff"
             onClick={() => useStore.getState().openCodeModal("diff")}
-            title="Abrir visualizador expandido de Diff e Código (tela cheia)"
+            title={t("ai_view_diff_title")}
           >
-            ⤢ Ver Diff
+            {t("ai_view_diff")}
           </button>
         </div>
       )}
