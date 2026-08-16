@@ -152,5 +152,19 @@ export function groupsFor(nodes: SerializedNode[], lens: LensId, config: Project
       .map(([label, nodeIds]) => ({ id: `layer:${label}`, label, nodeIds }))
       .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
   }
+  
+  if (lens === "domain") {
+    const byDomain = new Map<string, NodeId[]>();
+    for (const n of nodes) {
+      const domain = domainOf(n, config);
+      const list = byDomain.get(domain) ?? [];
+      list.push(n.id);
+      byDomain.set(domain, list);
+    }
+    return [...byDomain.entries()]
+      .map(([label, nodeIds]) => ({ id: `domain:${label}`, label, nodeIds }))
+      .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+  }
+  
   return [{ id: lens, label: lens, nodeIds: nodes.map((n) => n.id) }];
 }
