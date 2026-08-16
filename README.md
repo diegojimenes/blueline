@@ -85,6 +85,9 @@ Instead of infinite scroll that just rescales boxes, BlueLine switches the **sem
 ```
 
 ### 👓 2. Architectural Views (Without Losing Spatial Position)
+
+![BlueLine Domain Lenses](docs/blueline-domains.png)
+
 Views recolor and regroup the graph **without moving nodes**, preserving your spatial memory:
 - 🏢 **Layers**: Visualizes `domain`, `infra`, `ui`, `application`, `shared`, `entrypoint`.
 - 🌐 **Domain**: Groups symbols by business contexts configured in `blueline.json`.
