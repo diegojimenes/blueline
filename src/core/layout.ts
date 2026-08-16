@@ -9,9 +9,10 @@
  * o grid encolhe para caber.
  */
 
-import type { Level, NodeId, ProjectConfig } from "./model/types";
+import type { LensId, Level, NodeId, ProjectConfig } from "./model/types";
 import type { SerializedGraph } from "./serialize";
 import { visibleNodes } from "./navigation";
+import { domainOf, layerOf } from "./lenses";
 
 export interface Rect {
   x: number;
@@ -185,12 +186,31 @@ const FOCUS_MAX_H = 110;
  */
 export function layoutVisible(
   graph: SerializedGraph,
-  nav: { level: Level; focus: NodeId | null },
+  nav: { level: Level; focus: NodeId | null; lens?: LensId },
   width: number,
   height: number,
   config: ProjectConfig = {},
 ): LayoutMap {
-  const nodes = visibleNodes(graph, nav, config);
+  let nodes = visibleNodes(graph, nav, config);
+  
+  // Reordena os módulos no Nível 1 para agrupá-los conforme a lente ativa,
+  // evitando que as caixas de agrupamento visual se sobreponham.
+  if (nav.level === 1 && nav.lens) {
+    nodes = [...nodes].sort((a, b) => {
+      let ga = "", gb = "";
+      if (nav.lens === "layers") {
+        ga = layerOf(a, config);
+        gb = layerOf(b, config);
+      } else if (nav.lens === "domain") {
+        ga = domainOf(a, config);
+        gb = domainOf(b, config);
+      }
+      if (ga < gb) return -1;
+      if (ga > gb) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   const positions: LayoutMap = new Map();
 
   if (width <= 0 || height <= 0 || nodes.length === 0) return positions;

@@ -97,10 +97,10 @@ export function Canvas() {
     const h = el.clientHeight;
     if (w <= 0 || h <= 0) return;
 
-    const nav = { level, focus };
-    const next = layoutVisible(graph, nav, w, h, {});
+    const nav = { level, focus, lens };
+    const next = layoutVisible(graph, nav, w, h, config);
     setLayout(next);
-  }, [graph, level, focus, setLayout]);
+  }, [graph, level, focus, lens, config, setLayout]);
 
   // Render principal do canvas
   const draw = useCallback(() => {
@@ -134,7 +134,7 @@ export function Canvas() {
       return;
     }
 
-    const positions = s.layout ?? layoutVisible(s.graph, { level: s.level, focus: s.focus }, w, h, s.config);
+    const positions = s.layout ?? layoutVisible(s.graph, { level: s.level, focus: s.focus, lens: s.lens }, w, h, s.config);
     const viewport: Rect = { x: -pan.x, y: -pan.y, width: w, height: h };
     const portals =
       s.level >= 3 && s.focus
@@ -166,7 +166,7 @@ export function Canvas() {
     }
 
     const nodes = visibleNodes(s.graph, { level: s.level, focus: s.focus }, s.config);
-    if (s.level === 1 && s.lens === "layers") {
+    if (s.level === 1 && (s.lens === "layers" || s.lens === "domain")) {
       drawLensGroups(ctx, groupsFor(nodes, s.lens, s.config), positions, visible);
     }
 
