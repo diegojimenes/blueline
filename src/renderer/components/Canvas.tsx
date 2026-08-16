@@ -58,6 +58,7 @@ export function Canvas() {
   const trail = useStore((s) => s.trail);
   const theme = useStore((s) => s.theme);
   const layout = useStore((s) => s.layout);
+  const config = useStore((s) => s.config);
   const gitDirty = useStore((s) => s.gitDirty);
   const diffSummary = useStore((s) => s.diffSummary);
   const reviewedNodes = useStore((s) => s.reviewedNodes);
@@ -411,14 +412,31 @@ export function Canvas() {
           </button>
         )}
 
-        {/* Legenda Visual para Lente de Acoplamento */}
-        {lens === "coupling" && (
-          <div className="coupling-canvas-legend" aria-label="Legenda de Cores de Acoplamento">
-            <span className="legend-title">Acoplamento:</span>
-            <span className="legend-item"><span className="legend-dot" style={{ background: "#10b981" }} /> 0 (Baixo)</span>
-            <span className="legend-item"><span className="legend-dot" style={{ background: "#06b6d4" }} /> 1-2 (Moderado)</span>
-            <span className="legend-item"><span className="legend-dot" style={{ background: "#f59e0b" }} /> 3-4 (Alto)</span>
-            <span className="legend-item"><span className="legend-dot" style={{ background: "#ef4444" }} /> 5+ (Crítico)</span>
+        {/* Legenda Visual Dinâmica */}
+        {(lens === "coupling" || lens === "layers" || lens === "domain") && (
+          <div className="coupling-canvas-legend" aria-label="Legenda de Cores">
+            <span className="legend-title">
+              {lens === "coupling" ? "Acoplamento:" : lens === "layers" ? "Camadas:" : "Domínios:"}
+            </span>
+            {lens === "coupling" ? (
+              <>
+                <span className="legend-item"><span className="legend-dot" style={{ background: "#10b981" }} /> 0 (Baixo)</span>
+                <span className="legend-item"><span className="legend-dot" style={{ background: "#06b6d4" }} /> 1-2 (Moderado)</span>
+                <span className="legend-item"><span className="legend-dot" style={{ background: "#f59e0b" }} /> 3-4 (Alto)</span>
+                <span className="legend-item"><span className="legend-dot" style={{ background: "#ef4444" }} /> 5+ (Crítico)</span>
+              </>
+            ) : graph ? (
+              (() => {
+                const nodes = visibleNodes(graph, { level, focus }, config);
+                const groups = groupsFor(nodes, lens, config).slice(0, 8); // Max 8 items
+                if (groups.length === 0) return <span className="legend-item" style={{opacity: 0.5}}>(Nenhum no nível atual)</span>;
+                return groups.map((g) => (
+                  <span key={g.id} className="legend-item">
+                    <span className="legend-dot" style={{ background: lensColor(g.id) }} /> {g.label}
+                  </span>
+                ));
+              })()
+            ) : null}
           </div>
         )}
 

@@ -712,6 +712,29 @@
   color: var(--text-muted);
 }
 
+.dashboard-metrics-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.metric-label {
+  color: var(--text-muted);
+}
+
 .layer-impact-grid {
   display: flex;
   flex-wrap: wrap;
