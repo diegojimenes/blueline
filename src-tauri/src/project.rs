@@ -1,11 +1,11 @@
 use std::fs;
 use std::path::Path;
 
-/// Arquivos de origem do pipeline TS/JS (specs/04-analysis-pipeline.md).
+/// Arquivos de origem do pipeline TS/JS e Python (specs/04-analysis-pipeline.md, M11).
 pub fn is_source_file(path: &Path) -> bool {
     matches!(
         path.extension().and_then(|e| e.to_str()),
-        Some("ts") | Some("tsx") | Some("js") | Some("jsx")
+        Some("ts") | Some("tsx") | Some("js") | Some("jsx") | Some("py") | Some("pyi")
     )
 }
 

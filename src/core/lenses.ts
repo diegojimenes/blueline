@@ -16,12 +16,26 @@ export interface LensGroup {
   nodeIds: NodeId[];
 }
 
-/** Regras padrão de camada por convenção de caminho (specs/06-lenses.md). */
+/** Regras padrão de camada por convenção de caminho (specs/06-lenses.md + Clean Arch / Web / Game Engine). */
 const DEFAULT_LAYER_RULES: Array<{ layer: string; prefixes: string[] }> = [
-  { layer: "api", prefixes: ["api", "routes", "controllers"] },
-  { layer: "domain", prefixes: ["domain", "entities", "models"] },
-  { layer: "application", prefixes: ["services", "use-cases"] },
-  { layer: "infra", prefixes: ["infra", "db", "clients"] },
+  { layer: "api", prefixes: ["api", "routes", "controllers", "endpoints", "handlers", "server", "http"] },
+  { layer: "ui", prefixes: ["ui", "components", "views", "screens", "renderer", "pages", "styles", "widgets"] },
+  { layer: "domain", prefixes: ["domain", "entities", "models", "types", "schemas", "value-objects"] },
+  { layer: "application", prefixes: ["services", "use-cases", "usecases", "workflow", "engine", "core", "store"] },
+  { layer: "infra", prefixes: ["infra", "infrastructure", "db", "database", "clients", "repositories", "storage", "adapters", "pty", "git"] },
+];
+
+/** Regras padrão de domínio por convenção de caminho (Game Engine, E-commerce, Clean Architecture). */
+const DEFAULT_DOMAIN_RULES: Array<{ domain: string; keywords: string[] }> = [
+  { domain: "physics", keywords: ["physics", "collider", "rigidbody", "kinematic", "collision", "raycast"] },
+  { domain: "render", keywords: ["render", "renderer", "shader", "mesh", "material", "canvas", "camera", "scene", "viewport"] },
+  { domain: "audio", keywords: ["audio", "sound", "music", "sfx", "listener"] },
+  { domain: "input", keywords: ["input", "keyboard", "mouse", "touch", "controller", "gamepad", "pointer"] },
+  { domain: "ai", keywords: ["ai", "agent", "behavior", "navmesh", "pathfinding", "bt", "llm", "decision"] },
+  { domain: "gameplay", keywords: ["gameplay", "character", "player", "enemy", "quest", "inventory", "item", "skill", "combat"] },
+  { domain: "ecs", keywords: ["ecs", "entity", "component", "system", "world"] },
+  { domain: "auth", keywords: ["auth", "login", "user", "session", "permission", "security", "token"] },
+  { domain: "billing", keywords: ["billing", "payment", "checkout", "cart", "invoice", "stripe", "pos"] },
 ];
 
 function pathOf(node: SerializedNode, config: ProjectConfig): string {
@@ -51,15 +65,26 @@ export function layerOf(node: SerializedNode, config: ProjectConfig = {}): strin
   return "core";
 }
 
-/** Domínio de um nó (lente Domínio). Requer `domainPaths` no config. */
+/** Domínio de um nó (lente Domínio). Usa `domainPaths` do config ou heurísticas inteligentes de taxonomia. */
 export function domainOf(node: SerializedNode, config: ProjectConfig = {}): string {
   const domains = config.domainPaths;
-  if (!domains) return "outros";
   const path = pathOf(node, config);
   if (node.kind === "project") return "sistema";
-  for (const [domain, prefix] of Object.entries(domains)) {
-    if (path === prefix || path.startsWith(`${prefix}/`)) return domain;
+
+  if (domains) {
+    for (const [domain, prefix] of Object.entries(domains)) {
+      if (path === prefix || path.startsWith(`${prefix}/`)) return domain;
+    }
   }
+
+  // Heurística de domínio por convenção / keywords no caminho do arquivo ou nome do nó
+  const segments = `${path}/${node.name}`.toLowerCase().split(/[/._\- \d]+/);
+  for (const rule of DEFAULT_DOMAIN_RULES) {
+    if (rule.keywords.some((kw) => segments.includes(kw) || segments.some((s) => s.startsWith(kw)))) {
+      return rule.domain;
+    }
+  }
+
   return "outros";
 }
 

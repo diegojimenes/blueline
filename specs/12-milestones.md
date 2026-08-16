@@ -112,13 +112,43 @@
   respeita colapso manual; arestas mais limpas (retas finas + ponto no destino).
 - 8 testes cargo + 129 testes vitest + typecheck/lint verdes.
 
-## Backlog pós-MVP (fora do escopo, prioridade relativa)
+## M6 — Persistência de sessão (pós-MVP) ✅
 
-1. **Camada 2 — hooks por agente** (`PreToolUse`/`PostToolUse`): evento `agent:tool`, diff antes/depois sem esperar save.
-2. Busca fuzzy global de símbolos (Ctrl+P / `/`).
-3. Persistência de sessão (trilha, visited, lente, foco) entre aberturas.
-4. Outras linguagens: nova implementação de `Parser` (a interface já existe) — ex.: Python, Go.
-5. Análise de tipos do TS para resolução precisa de chamadas (reduzir `unresolved`).
-6. Performance: WebGL, virtualização em monorepos grandes, layout incremental.
-7. Grafo "puxe" (query graph) e filtros de subárvore por domínio.
-8. Múltiplos projetos/snapshots comparáveis (diff entre versões do grafo na mesma janela).
+- **Salvar & Restaurar:** guarda no `localStorage` sob `codeatlas:session` tema, lente, caminho do projeto,
+  foco, nível, trilha, visitados e nó selecionado (`src/renderer/session.ts`).
+- **Validação estrutural:** ao reabrir o app, o projeto é reaberto a partir do disco (`openProject`) e o nó
+  salvo é validado contra o novo grafo. Se o nó ainda existir, restaura a navegação e a trilha exata; se tiver
+  sido deletado/renomeado, cai graciosamente no nível 1 preservando tema, lente e nós visitados (`src/renderer/store/index.ts`).
+- **Persistência reativa:** `useStore.subscribe` com debounce de 300 ms e comparação de mudanças funcionais (`hasSessionChanged`),
+  mais flush imediato (`flushSession`) nos eventos de ciclo de vida da janela (`beforeunload`/`pagehide`) (`src/renderer/App.tsx`).
+- 8 testes cargo + 146 testes vitest + typecheck/lint/build verdes.
+
+## M7 — Busca fuzzy global (Ctrl+P / `/`) ✅
+- QuickSearch modal (`src/renderer/components/QuickSearch.tsx`) com atalhos de teclado globais `Ctrl+P`, `Cmd+P` e `/`.
+- Filtro fuzzy de alta performance sobre todos os símbolos do grafo (`src/core/search.ts`), navegação determinística com `goto`.
+
+## M8 & M9 — Diff, Snapshots & Análise Incremental de Grafo ✅
+- Diff unificado de Git com destaques sintáticos em adições, remoções e hunks (`src/core/diff.ts`).
+- Comparação de snapshots de grafo `computeGraphDiff` computando deltas de nós adicionados, removidos e modificados.
+- Nova aba "Diff" no `Inspector.tsx` consumindo `git_diff` do backend Tauri.
+
+## M10 — Protocolo de Agente & Hooks de IA ✅
+- `src/core/agent-protocol.ts`: extração determinística de contexto de chamadores, chamados, membros e imports formatados para prompts de IA.
+- Evento `agentAttention` na store e notificação visual com pulso na `StatusBar` para agentes como Claude, Cursor, Copilot e Aider.
+
+## M11 — Extensibilidade Multi-Linguagem & Python Parser ✅
+- `CompositeParser` (`src/core/parse/composite-parser.ts`) despachando parsers conforme a extensão do arquivo.
+- `PythonParser` (`src/core/parse/python-parser.ts`) para extração de classes, métodos, imports e chamadas em arquivos `.py` e `.pyi`.
+- Suporte estendido a arquivos Python no watcher e scanner do backend Rust (`src-tauri/src/project.rs`).
+
+## M12 — Performance & Caching de Grafo para Grandes Repositórios ✅
+- Spatial Grid Hash (`src/core/spatial-index.ts`) para culling instantâneo O(1) de dezenas de milhares de nós no Canvas a 60 FPS.
+- `MemoryGraphCache` / `GraphCacheStorage` (`src/core/storage/graph-cache.ts`) para persistência assíncrona e boot instantâneo de projetos gigantes.
+
+## M13 — Query Graph Declarativo & Multi-Projeto / Workspace ✅
+- Motor de busca declarativo `queryGraph` (`src/core/query.ts`) com suporte a seletores estruturados (`kind:class`, `layer:domain`, `coupling:>2`, `name:User`, `file:auth.ts`).
+- Novo comando `query <expr>` (alias `q`) integrado ao terminal e dispatch de comandos (`src/core/commands.ts`).
+- Agregação de múltiplos projetos em workspaces unificados (`src/core/workspace.ts`) com IDs qualificados e isolamento de dependências.
+
+> Estado atual (M0 a M13 concluídos): 8 testes cargo + 172 testes vitest + typecheck/lint/build 100% verdes.
+

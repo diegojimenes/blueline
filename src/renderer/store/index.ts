@@ -4,12 +4,14 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   applyFileRemovals,
   applyFiles,
+  ancestorChain,
   buildGraph,
   cacheFrom,
   cmdLens,
   cmdUp,
   fromJSON,
   gotoNode,
+  levelOfKind,
   navigationToNode,
   runCommand,
   toJSON,
@@ -25,10 +27,15 @@ import {
   type ProjectConfig,
   type SerializedGraph,
   type SymbolCache,
+  type AgentAttentionEvent,
+  type ProjectDiffSummary,
+  mapDiffToSymbols,
+  parseUnifiedDiff,
 } from "../../core";
 import { demoGraph } from "../demo/demoGraph";
 import { demoConfig } from "../demo/demoConfig";
 import { getParser } from "../parser";
+import { hasSessionChanged, loadSession, saveSession, type SessionInput } from "../session";
 
 export type Theme = "dark" | "light";
 
@@ -58,6 +65,14 @@ interface AppState extends NavigationState {
   projectOpen: boolean;
   projectPath: string | null;
   graph: SerializedGraph | null;
+  /** Snapshot de baseline do grafo (início da sessão ou commit limpo) */
+  baselineGraph: SerializedGraph | null;
+  /** Resumo granular de diff por nó da AST com cálculo de magnitude */
+  diffSummary: ProjectDiffSummary | null;
+  /** Nós marcados como revisados pelo desenvolvedor durante a sessão */
+  reviewedNodes: Set<NodeId>;
+  /** Escopo de revisão (local no nó/módulo vs global no projeto) */
+  reviewScope: "local" | "project";
   /** Config do projeto (demo simula um `codeatlas.json`). */
   config: ProjectConfig;
   /** Posições cacheadas por (level, focus) — a lente nunca move (D7). */
@@ -76,14 +91,27 @@ interface AppState extends NavigationState {
   /** Estado git do projeto aberto (status bar + marcadores no Explorer). */
   gitRepo: boolean;
   gitDirty: string[];
+  /** Notificação de foco / atividade de agentes de IA (M10). */
+  agentAttention: AgentAttentionEvent | null;
+  /** Visualizador expandido / modal de código & diff. */
+  codeModalOpen: boolean;
+  codeModalInitialTab: "code" | "diff" | "split";
 
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setLens: (lens: LensId) => void;
   cycleLens: () => void;
   setSelected: (selected: NodeId | null) => void;
+  setAgentAttention: (event: AgentAttentionEvent | null) => void;
+  setReviewScope: (scope: "local" | "project") => void;
+  toggleReviewed: (nodeId: NodeId) => void;
+  markAsReviewed: (nodeId: NodeId) => void;
+  openCodeModal: (tab?: "code" | "diff" | "split") => void;
+  closeCodeModal: () => void;
   setLayout: (layout: LayoutMap | null) => void;
   loadDemo: () => void;
+  /** Restaura a sessão salva (M6): tema/lente + reabre o projeto e valida a navegação. */
+  restoreSession: () => Promise<void>;
   /** Abre um diretório real: walk + parse inicial + watcher (M5). */
   openProject: (path: string) => Promise<void>;
   /** Seletor de pasta (botão "Abrir" no header) → `openProject`. */
@@ -153,6 +181,10 @@ export const useStore = create<AppState>()((set, get) => {
     projectOpen: false,
     projectPath: null,
     graph: null,
+    baselineGraph: null,
+    diffSummary: null,
+    reviewedNodes: new Set<NodeId>(),
+    reviewScope: "local",
     config: demoConfig,
     layout: null,
     history: [],
@@ -164,6 +196,9 @@ export const useStore = create<AppState>()((set, get) => {
     flash: null,
     gitRepo: false,
     gitDirty: [],
+    agentAttention: null,
+    codeModalOpen: false,
+    codeModalInitialTab: "diff",
 
     setTheme: (theme) => set({ theme }),
     toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -174,25 +209,144 @@ export const useStore = create<AppState>()((set, get) => {
       apply(cmdLens(s, next, {}), `lens ${next}`);
     },
     setSelected: (selected) => set({ selected }),
+    setAgentAttention: (agentAttention) => set({ agentAttention }),
+    setReviewScope: (reviewScope) => set({ reviewScope }),
+    toggleReviewed: (nodeId) =>
+      set((s) => {
+        const next = new Set(s.reviewedNodes);
+        if (next.has(nodeId)) next.delete(nodeId);
+        else next.add(nodeId);
+        return { reviewedNodes: next };
+      }),
+    markAsReviewed: (nodeId) =>
+      set((s) => {
+        const next = new Set(s.reviewedNodes);
+        next.add(nodeId);
+        return { reviewedNodes: next };
+      }),
+    openCodeModal: (tab = "diff") => set({ codeModalOpen: true, codeModalInitialTab: tab }),
+    closeCodeModal: () => set({ codeModalOpen: false }),
     setLayout: (layout) => set({ layout }),
 
-  loadDemo: () =>
+    loadDemo: () => {
+      const demoDiffSummary: ProjectDiffSummary = {
+        dirtyFiles: ["src/ecs/BehaviorSystem.ts"],
+        symbols: new Map([
+          [
+            "class:src/ecs/BehaviorSystem.ts:BehaviorSystem",
+            {
+              nodeId: "class:src/ecs/BehaviorSystem.ts:BehaviorSystem",
+              kind: "class",
+              name: "BehaviorSystem",
+              file: "src/ecs/BehaviorSystem.ts",
+              additions: 12,
+              deletions: 2,
+              totalLinesChanged: 14,
+              magnitude: "medium",
+            },
+          ],
+          [
+            "method:src/ecs/BehaviorSystem.ts:BehaviorSystem:update",
+            {
+              nodeId: "method:src/ecs/BehaviorSystem.ts:BehaviorSystem:update",
+              kind: "method",
+              name: "update",
+              file: "src/ecs/BehaviorSystem.ts",
+              additions: 8,
+              deletions: 1,
+              totalLinesChanged: 9,
+              magnitude: "medium",
+            },
+          ],
+        ]),
+        fileSummaries: new Map([
+          [
+            "src/ecs/BehaviorSystem.ts",
+            {
+              file: "src/ecs/BehaviorSystem.ts",
+              additions: 12,
+              deletions: 2,
+              totalLinesChanged: 14,
+              magnitude: "medium",
+            },
+          ],
+        ]),
+      };
+
+      set({
+        graph: demoGraph,
+        baselineGraph: demoGraph,
+        diffSummary: demoDiffSummary,
+        reviewedNodes: new Set<NodeId>(),
+        reviewScope: "local",
+        config: demoConfig,
+        projectOpen: true,
+        projectPath: demoGraph.projectRoot,
+        ...initialNavigation,
+        history: [],
+        historyIndex: 0,
+        log: [],
+        symbols: new Map(),
+        watcherState: "off",
+        watcherTime: null,
+        flash: null,
+        gitRepo: true,
+        gitDirty: ["src/ecs/BehaviorSystem.ts"],
+      });
+    },
+
+  restoreSession: async () => {
+    const session = loadSession();
+    if (!session) return;
+    set({ theme: session.theme, lens: session.lens });
+    if (!session.projectPath) return;
+    try {
+      await get().openProject(session.projectPath);
+    } catch {
+      // Projeto não existe mais ou falhou ao abrir — app segue limpo (tema/lente já aplicados).
+      return;
+    }
+    const s = get();
+    if (!s.graph) return;
+
+    const visited = new Set(s.visited);
+    for (const v of session.visited) {
+      if (s.graph.nodes.some((n) => n.id === v) || v.startsWith("module:") || v === "project") {
+        visited.add(v);
+      }
+    }
+
+    if (!session.focus) {
+      const selected =
+        session.selected && s.graph.nodes.some((n) => n.id === session.selected)
+          ? session.selected
+          : null;
+      set({ lens: session.lens, visited, selected });
+      return;
+    }
+
+    const node = s.graph.nodes.find((n) => n.id === session.focus);
+    if (!node) {
+      // Nó removido/renomeado do projeto — fica no nível 1 (sistema) com visitados restaurados.
+      set({ lens: session.lens, visited });
+      return;
+    }
+
+    const trail = ancestorChain(s.graph, session.focus, s.config);
+    const selected =
+      session.selected && s.graph.nodes.some((n) => n.id === session.selected)
+        ? session.selected
+        : session.focus;
+
     set({
-      graph: demoGraph,
-      config: demoConfig,
-      projectOpen: true,
-      projectPath: demoGraph.projectRoot,
-      ...initialNavigation,
-      history: [],
-      historyIndex: 0,
-      log: [],
-      symbols: new Map(),
-      watcherState: "off",
-      watcherTime: null,
-      flash: null,
-      gitRepo: false,
-      gitDirty: [],
-    }),
+      lens: session.lens,
+      focus: session.focus,
+      level: levelOfKind(node.kind),
+      trail,
+      visited,
+      selected,
+    });
+  },
 
   openProject: async (path) => {
     const parser = await getParser();
@@ -204,13 +358,20 @@ export const useStore = create<AppState>()((set, get) => {
       inputs.push({ path: f.path, symbols: parser.parseFile(f.path, f.content) });
     }
     const graph = buildGraph(inputs, path, {}).graph;
+    const graphJson = toJSON(graph, {});
+    const currentLens = get().lens;
     set({
-      graph: toJSON(graph, {}),
+      graph: graphJson,
+      baselineGraph: graphJson,
+      diffSummary: null,
+      reviewedNodes: new Set<NodeId>(),
+      reviewScope: "local",
       symbols: cacheFrom(inputs),
       config: {},
       projectOpen: true,
       projectPath: path,
       ...initialNavigation,
+      lens: currentLens,
       history: [],
       historyIndex: 0,
       flash: null,
@@ -285,14 +446,31 @@ export const useStore = create<AppState>()((set, get) => {
   refreshGitStatus: async () => {
     const s = get();
     if (!isTauri() || !s.projectPath) {
-      set({ gitRepo: false, gitDirty: [] });
+      set({ gitRepo: false, gitDirty: [], diffSummary: null });
       return;
     }
     try {
       const status = await invoke<GitStatus>("git_status", { projectPath: s.projectPath });
-      set({ gitRepo: status.repo, gitDirty: status.dirty });
+      let diffSummary: ProjectDiffSummary | null = null;
+      if (status.repo && status.dirty.length > 0 && s.graph) {
+        try {
+          const fileDiffs = [];
+          for (const rel of status.dirty) {
+            const diffStr = await invoke<string>("git_diff", { projectPath: s.projectPath, relPath: rel });
+            if (diffStr) {
+              fileDiffs.push(...parseUnifiedDiff(diffStr));
+            }
+          }
+          if (fileDiffs.length > 0) {
+            diffSummary = mapDiffToSymbols(fileDiffs, s.graph);
+          }
+        } catch {
+          // Mantém status básico caso haja erro em diff
+        }
+      }
+      set({ gitRepo: status.repo, gitDirty: status.dirty, diffSummary });
     } catch {
-      set({ gitRepo: false, gitDirty: [] });
+      set({ gitRepo: false, gitDirty: [], diffSummary: null });
     }
   },
 
@@ -434,3 +612,49 @@ function moveToIndex(
   const nav = navigationToNode(s.graph, s, target, s.config);
   set({ ...nav, historyIndex: idx });
 }
+
+// Debounced persistência da sessão (M6).
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let lastSavedInput: SessionInput | null = null;
+
+export function flushSession(): void {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  const s = useStore.getState();
+  const currentInput: SessionInput = {
+    theme: s.theme,
+    lens: s.lens,
+    projectPath: s.projectPath,
+    focus: s.focus,
+    level: s.level,
+    trail: s.trail,
+    visited: s.visited,
+    selected: s.selected,
+  };
+  saveSession(currentInput);
+  lastSavedInput = currentInput;
+}
+
+useStore.subscribe((state) => {
+  const currentInput: SessionInput = {
+    theme: state.theme,
+    lens: state.lens,
+    projectPath: state.projectPath,
+    focus: state.focus,
+    level: state.level,
+    trail: state.trail,
+    visited: state.visited,
+    selected: state.selected,
+  };
+  if (!hasSessionChanged(lastSavedInput, currentInput)) return;
+
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    saveSession(currentInput);
+    lastSavedInput = currentInput;
+    persistTimer = null;
+  }, 300);
+});
+

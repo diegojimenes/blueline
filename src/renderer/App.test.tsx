@@ -32,4 +32,14 @@ describe("App (layout M0)", () => {
     expect(document.documentElement.dataset.theme).toBe("light");
     useStore.setState({ theme: "dark" });
   });
+
+  it("dispara flush da sessão no evento beforeunload", () => {
+    useStore.setState({ theme: "light", lens: "domain", projectPath: "/repo-unload" });
+    render(<App />);
+    window.dispatchEvent(new Event("beforeunload"));
+    const raw = localStorage.getItem("codeatlas:session");
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(raw!).projectPath).toBe("/repo-unload");
+  });
 });
+

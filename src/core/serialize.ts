@@ -5,9 +5,33 @@ import { moduleOfPath } from "./analyze/build";
 export type SerializedNode =
   | { id: NodeId; kind: "project"; name: string }
   | { id: NodeId; kind: "module"; name: string; path: string }
-  | { id: NodeId; kind: "class"; name: string; file: string; startLine: number }
-  | { id: NodeId; kind: "method"; name: string; file: string; startLine: number; owner: NodeId }
-  | { id: NodeId; kind: "local"; name: string; file: string; startLine: number; owner: NodeId };
+  | {
+      id: NodeId;
+      kind: "class";
+      name: string;
+      file: string;
+      startLine: number;
+      endLine?: number;
+      isSecondary?: boolean;
+    }
+  | {
+      id: NodeId;
+      kind: "method";
+      name: string;
+      file: string;
+      startLine: number;
+      endLine?: number;
+      owner: NodeId;
+    }
+  | {
+      id: NodeId;
+      kind: "local";
+      name: string;
+      file: string;
+      startLine: number;
+      endLine?: number;
+      owner: NodeId;
+    };
 
 export interface SerializedEdge {
   id: EdgeId;
@@ -32,7 +56,15 @@ export function serializeNode(node: Node): SerializedNode {
     case "module":
       return { id: node.id, kind: "module", name: node.name, path: node.path };
     case "class":
-      return { id: node.id, kind: "class", name: node.name, file: node.file, startLine: node.startLine };
+      return {
+        id: node.id,
+        kind: "class",
+        name: node.name,
+        file: node.file,
+        startLine: node.startLine,
+        endLine: node.endLine,
+        isSecondary: node.isSecondary,
+      };
     case "method":
       return {
         id: node.id,
@@ -40,6 +72,7 @@ export function serializeNode(node: Node): SerializedNode {
         name: node.name,
         file: node.file,
         startLine: node.startLine,
+        endLine: node.endLine,
         owner: node.owner,
       };
     case "local":
@@ -49,6 +82,7 @@ export function serializeNode(node: Node): SerializedNode {
         name: node.name,
         file: node.file,
         startLine: node.startLine,
+        endLine: node.endLine,
         owner: node.owner,
       };
   }

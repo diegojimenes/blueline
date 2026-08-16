@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
-const TS_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const TS_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|pyi)$/;
 
 export const DEFAULT_IGNORE = ["node_modules", ".git", ".next", "dist", "build", "coverage", "target"];
 

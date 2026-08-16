@@ -22,7 +22,13 @@ export interface LocalSymbol extends MethodSymbol {
 export interface ClassSymbol {
   name: string;
   startLine: number;
+  endLine?: number;
   methods: MethodSymbol[];
+}
+
+export interface ImportedItem {
+  name: string;
+  alias?: string;
 }
 
 export interface ImportSymbol {
@@ -30,11 +36,17 @@ export interface ImportSymbol {
   from: string;
   /** Símbolos importados (quando listáveis). */
   symbols?: string[];
+  /** Itens importados com alias (ex.: import { x as y }). */
+  items?: ImportedItem[];
+  /** Nome da importação default ou namespace (ex.: import * as X / import X). */
+  defaultOrNamespace?: string;
 }
 
 export interface CallSymbol {
   /** Nome do alvo da chamada (método/função). */
   target: string;
+  /** Receptor da chamada quando aplicável (ex.: 'this', 'super', 'api'). */
+  receiver?: string;
   line: number;
   col: number;
   /** Nome do método que contém a chamada (preenchido na atribuição por range). */

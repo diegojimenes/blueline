@@ -41,26 +41,16 @@ Nome de trabalho: **CodeAtlas**.
 | Lint/typecheck | `pnpm lint` / `pnpm typecheck` |
 | Build de produção | `pnpm build` |
 
-> Marco M0 concluído (janela com layout de 4 painéis + status bar), **M1 concluído** (parse tree-sitter TS/JS,
-> modelo de grafo, `toJSON` canônico, goldens; 70 testes) e **M2 concluído** (grafo & zoom semântico: canvas com
-> culling, duplo clique entra / `up` sai, portais, trail/visited, `core/commands` goto/up/ls com mesmo histórico
-> via canvas ou comando; demo embutida em `src/renderer/demo/demoGraph.ts` — `pnpm demo:graph` regenera).
-> **M3 concluído** (layout IDE: Explorer em árvore, Inspector com código + camada/domínio/acoplamento, lentes
-> Camadas/Acoplamento/Domínio recolorem sem mover nós via `core/lenses.ts`, atalhos `l`/`/`/`Alt+←/→`,
-> `demoConfig`; 87 testes) — ver `specs/12-milestones.md`.
-> **M4 concluído** (terminal real: `portable-pty` no backend + xterm.js; `core/tty.ts` decide comando vs shell
-> sem eco duplicado; histórico de navegação clicável; fallback demo no browser; 107 testes) — ver
-> `specs/12-milestones.md`.
-> **M5 concluído — MVP completo** (live updates: watcher `notify` com debounce + batch `files:changed`;
-> `git.rs` provider via porcelain; `core/delta.ts` + `core/incremental.ts` (re-parse só dos tocados, no-op
-> não sobe revisão); `open <dir>` no terminal com parse inicial no webview (tree-sitter WASM via `?url`);
-> pulso de nós afetados no canvas + status bar do watcher; 122 testes vitest + 8 cargo) — ver
-> `specs/12-milestones.md`.
-> **M5.1 concluído — refinamentos de UX** (nível 5: funções locais/`local` dentro de métodos; app abre
-> limpo sem demo; botão "Abrir" na UI; Inspector lê código real do disco; git na status bar + ● no
-> Explorer; terminal (re)spawna no diretório do projeto; duplo clique no vazio/↑ voltar sobem nível;
-> 129 testes vitest + 8 cargo) — ver `specs/12-milestones.md`.
-> Próximo: backlog pós-MVP (hooks por agente, busca fuzzy, outras linguagens).
+> **M0 a M13 concluídos (Pipeline Completo CodeAtlas)**:
+> - **M0 a M6 (MVP + Refinamentos + Sessão)**: layout IDE de 4 painéis, parse incremental TS/JS, grafo normalizado, zoom semântico (níveis 1 a 5), portais, lentes (Camadas/Acoplamento/Domínio), terminal real xterm.js + PTY Rust, live updates via `notify` + debounce, git status, e persistência de sessão.
+> - **M7 (Busca Fuzzy Global)**: modal QuickSearch com atalhos `Ctrl+P`/`Cmd+P`/`/` e filtro O(1).
+> - **M8 & M9 (Diff & Snapshots)**: diff visual unificado no Inspector e `computeGraphDiff` para comparação estrutural de revisões.
+> - **M10 (Protocolo de Agente)**: contexto de símbolos/chamadas pronto para LLMs e notificação de atenção de IA na StatusBar.
+> - **M11 (Extensibilidade Multi-Linguagem)**: `CompositeParser` + `PythonParser` para análise de repositórios Python (`.py`/`.pyi`).
+> - **M12 (Performance & Cache)**: Spatial Grid Hash para culling a 60 FPS de grandes grafos e `GraphCacheStorage` para repositórios gigantes.
+> - **M13 (Query Graph & Multi-Projeto)**: motor declarativo de queries estruturadas (`query kind:class layer:domain`), comando `query`/`q` no terminal e workspaces multi-projeto (`mergeWorkspaceGraphs`).
+> 
+> Estado atual: **8 testes cargo + 172 testes vitest + typecheck/lint 100% verdes**.
 
 ## Checklist ao trabalhar aqui
 

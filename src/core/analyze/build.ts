@@ -55,22 +55,27 @@ export function buildGraph(files: BuildFileInput[], projectRoot: string, config:
     const classIds: NodeId[] = [];
     const records: MethodRecord[] = [];
 
+    const fileBase = stripExtension(basename(path));
+
     if (symbols.classes.length === 0) {
       if (symbols.methods.length > 0) {
-        const name = stripExtension(basename(path));
+        const name = fileBase;
         const classId = `class:${path}:${name}`;
-        nodes.set(classId, { kind: "class", id: classId, name, file: path, startLine: 1 });
+        nodes.set(classId, { kind: "class", id: classId, name, file: path, startLine: 1, endLine: symbols.methods[symbols.methods.length - 1]?.endLine, isSecondary: false });
         classIds.push(classId);
       }
     } else {
       for (const cls of symbols.classes) {
         const classId = `class:${path}:${cls.name}`;
+        const isSecondary = cls.name.toLowerCase() !== fileBase.toLowerCase();
         nodes.set(classId, {
           kind: "class",
           id: classId,
           name: cls.name,
           file: path,
           startLine: cls.startLine,
+          endLine: cls.endLine,
+          isSecondary,
         });
         classIds.push(classId);
       }
@@ -84,20 +89,22 @@ export function buildGraph(files: BuildFileInput[], projectRoot: string, config:
     }
     if (classIds.length > 0 && symbols.methods.length > 0) {
       // Arquivo com classes + funções top-level: funções vão para o nó de arquivo.
-      const fileClassId = `class:${path}:${stripExtension(basename(path))}`;
+      const fileClassId = `class:${path}:${fileBase}`;
       if (!nodes.has(fileClassId)) {
         nodes.set(fileClassId, {
           kind: "class",
           id: fileClassId,
-          name: stripExtension(basename(path)),
+          name: fileBase,
           file: path,
           startLine: 1,
+          endLine: symbols.methods[symbols.methods.length - 1]?.endLine,
+          isSecondary: false,
         });
         classIds.push(fileClassId);
       }
     }
     for (const m of symbols.methods) {
-      const fileClassId = `class:${path}:${stripExtension(basename(path))}`;
+      const fileClassId = `class:${path}:${fileBase}`;
       if (nodes.has(fileClassId)) records.push(addMethod(m, fileClassId, path));
     }
 
@@ -122,6 +129,7 @@ export function buildGraph(files: BuildFileInput[], projectRoot: string, config:
         name: local.name,
         file: path,
         startLine: local.startLine,
+        endLine: local.endLine,
         owner: ownerId,
       });
       const memberEdgeId = `member:${ownerId}:${localId}`;
@@ -172,9 +180,20 @@ export function buildGraph(files: BuildFileInput[], projectRoot: string, config:
   for (const { path, symbols } of files) {
     const records = methodRecordsByFile.get(path) ?? [];
     for (const call of symbols.calls) {
-      const ownerId = findOwnerMethodId(records, call);
-      if (!ownerId) continue;
-      const targetId = resolveCallTarget(call.target, path, methodRecordsByFile, methodsByName);
+      const ownerRecord = findOwnerRecord(records, call);
+      if (!ownerRecord) continue;
+      const ownerId = ownerRecord.id;
+
+      const targetId = resolveCallTargetDetailed(
+        call,
+        path,
+        ownerRecord,
+        symbols.imports,
+        fileSet,
+        methodRecordsByFile,
+        methodsByName,
+      );
+
       if (!targetId) {
         stats.callsUnresolved++;
         continue;
@@ -206,6 +225,7 @@ export function buildGraph(files: BuildFileInput[], projectRoot: string, config:
       name: m.name,
       file: path,
       startLine: m.startLine,
+      endLine: m.endLine,
       owner: ownerClassId,
     });
     const memberId = `member:${ownerClassId}:${methodId}`;
@@ -244,20 +264,86 @@ export function resolveImportTarget(spec: string, fromFile: string, fileSet: Set
   return undefined;
 }
 
-function resolveCallTarget(
-  target: string,
-  file: string,
+function resolveCallTargetDetailed(
+  call: CallSymbol,
+  currentFile: string,
+  ownerRecord: MethodRecord,
+  imports: FileSymbols["imports"],
+  fileSet: Set<string>,
   methodRecordsByFile: Map<string, MethodRecord[]>,
   methodsByName: Map<string, NodeId[]>,
 ): NodeId | undefined {
-  const sameFile = methodRecordsByFile.get(file)?.filter((r) => r.symbol.name === target);
-  if (sameFile && sameFile.length === 1) return sameFile[0].id;
-  const all = methodsByName.get(target);
+  const targetName = call.target;
+  const sameFileRecords = methodRecordsByFile.get(currentFile) ?? [];
+
+  // 1. this.methodName() ou super.methodName() -> busca na mesma classe/arquivo
+  if (call.receiver === "this" || call.receiver === "super") {
+    // Procura método irmão com mesmo ownerClass
+    const sibling = sameFileRecords.find(
+      (r) => r.symbol.name === targetName && r.id.includes(ownerRecord.id.split(":").slice(0, 3).join(":")),
+    );
+    if (sibling) return sibling.id;
+    const sameFileMatch = sameFileRecords.find((r) => r.symbol.name === targetName);
+    if (sameFileMatch) return sameFileMatch.id;
+  }
+
+  // 2. Chamadas com receiver importado (ex.: Api.login() ou service.exec())
+  if (call.receiver) {
+    for (const imp of imports) {
+      if (
+        imp.defaultOrNamespace === call.receiver ||
+        imp.symbols?.includes(call.receiver) ||
+        imp.items?.some((it) => it.alias === call.receiver || it.name === call.receiver)
+      ) {
+        const targetFile = resolveImportTarget(imp.from, currentFile, fileSet);
+        if (targetFile) {
+          const targetFileRecords = methodRecordsByFile.get(targetFile) ?? [];
+          const match = targetFileRecords.find((r) => r.symbol.name === targetName);
+          if (match) return match.id;
+        }
+      }
+    }
+  }
+
+  // 3. Chamadas a funções/métodos importados diretamente (ex.: login() vindo de import { login })
+  for (const imp of imports) {
+    let origSymbolName: string | undefined;
+    if (imp.items) {
+      const it = imp.items.find((item) => (item.alias ? item.alias === targetName : item.name === targetName));
+      if (it) origSymbolName = it.name;
+    } else if (imp.symbols?.includes(targetName)) {
+      origSymbolName = targetName;
+    }
+
+    if (origSymbolName) {
+      const targetFile = resolveImportTarget(imp.from, currentFile, fileSet);
+      if (targetFile) {
+        const targetRecords = methodRecordsByFile.get(targetFile) ?? [];
+        const match = targetRecords.find((r) => r.symbol.name === origSymbolName);
+        if (match) return match.id;
+      }
+    }
+  }
+
+  // 4. Chamada para função no mesmo arquivo
+  const sameFileMatches = sameFileRecords.filter((r) => r.symbol.name === targetName);
+  if (sameFileMatches.length === 1) return sameFileMatches[0].id;
+  if (sameFileMatches.length > 1) {
+    // Dá preferência ao da mesma classe se houver
+    const classIdPrefix = ownerRecord.id.split(":").slice(0, 3).join(":");
+    const sameClass = sameFileMatches.find((r) => r.id.startsWith(classIdPrefix));
+    if (sameClass) return sameClass.id;
+    return sameFileMatches[0].id;
+  }
+
+  // 5. Unambiguous global match
+  const all = methodsByName.get(targetName);
   if (all && all.length === 1) return all[0];
+
   return undefined;
 }
 
-function findOwnerMethodId(records: MethodRecord[], call: CallSymbol): NodeId | undefined {
+function findOwnerRecord(records: MethodRecord[], call: CallSymbol): MethodRecord | undefined {
   let best: MethodRecord | undefined;
   for (const record of records) {
     const s = record.symbol;
@@ -265,7 +351,7 @@ function findOwnerMethodId(records: MethodRecord[], call: CallSymbol): NodeId | 
       if (!best || s.startLine > best.symbol.startLine) best = record;
     }
   }
-  return best?.id;
+  return best;
 }
 
 function push(index: Map<NodeId, NodeId[]>, from: NodeId, to: NodeId): void {

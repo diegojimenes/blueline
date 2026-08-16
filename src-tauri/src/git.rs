@@ -6,6 +6,8 @@ pub trait GitProvider: Send + Sync {
     fn is_repo(&self, dir: &Path) -> bool;
     /// Arquivos com mudança real vs HEAD: staged/unstaged (M/A/D/R) + untracked (`??`).
     fn dirty_files(&self, dir: &Path) -> Vec<String>;
+    /// Retorna o diff unificado do arquivo em relação a HEAD.
+    fn diff_file(&self, dir: &Path, rel_path: &str) -> Result<String, String>;
 }
 
 pub struct SystemGit;
@@ -33,6 +35,27 @@ impl GitProvider for SystemGit {
             .lines()
             .filter_map(parse_porcelain)
             .collect()
+    }
+
+    fn diff_file(&self, dir: &Path, rel_path: &str) -> Result<String, String> {
+        let out = Command::new("git")
+            .args(["diff", "HEAD", "--", rel_path])
+            .current_dir(dir)
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        let mut diff_str = String::from_utf8_lossy(&out.stdout).to_string();
+        if diff_str.trim().is_empty() {
+            // Se for arquivo untracked, gera diff a partir de /dev/null
+            let out_untracked = Command::new("git")
+                .args(["diff", "--no-index", "/dev/null", rel_path])
+                .current_dir(dir)
+                .output();
+            if let Ok(uo) = out_untracked {
+                diff_str = String::from_utf8_lossy(&uo.stdout).to_string();
+            }
+        }
+        Ok(diff_str)
     }
 }
 

@@ -26,8 +26,9 @@ const PORTAL_INSET = 14;
 
 /**
  * Calcula portais dos níveis 3 (classe), 4 (método) e 5 (funções locais):
- * arestas `call` que ligam um nó visível a um nó fora do foco. Cada alvo
- * externo vira um portal posicionado na borda mais próxima do nó de origem.
+ * arestas `call` que ligam um nó visível a um nó fora do foco.
+ * - Chamadas de entrada (incoming): lateral esquerda (`← Nome`).
+ * - Chamadas de saída (outgoing): lateral direita (`→ Nome`).
  */
 export function portalsOf(
   graph: SerializedGraph,
@@ -62,26 +63,32 @@ export function portalsOf(
 
     const target = nodeById(graph, targetId);
     const label = `${isOutgoing ? "→" : "←"} ${target?.name ?? "?"}`;
+    const side: Side = isOutgoing ? "right" : "left";
 
-    const cx = anchor.x + anchor.width / 2;
     const cy = anchor.y + anchor.height / 2;
-    const { x, y, side } = portalSpot(cx, cy, viewport);
+    const x = side === "left" ? viewport.x + PORTAL_INSET : viewport.x + viewport.width - PORTAL_INSET;
+    const y = Math.max(viewport.y + 32, Math.min(viewport.y + viewport.height - 32, cy));
+
     portals.push({ id: targetId, label, target: targetId, x, y, side });
   }
 
+  // Ajusta espaçamento vertical para evitar sobreposição de múltiplos portais na mesma lateral
+  const bySide = new Map<Side, Portal[]>();
+  for (const p of portals) {
+    const list = bySide.get(p.side) ?? [];
+    list.push(p);
+    bySide.set(p.side, list);
+  }
+  for (const list of bySide.values()) {
+    list.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < list.length; i++) {
+      const prev = list[i - 1];
+      const curr = list[i];
+      if (curr.y < prev.y + 32) {
+        curr.y = Math.min(viewport.y + viewport.height - 32, prev.y + 32);
+      }
+    }
+  }
+
   return portals;
-}
-
-function portalSpot(cx: number, cy: number, viewport: Rect): { x: number; y: number; side: Side } {
-  const left = cx - viewport.x;
-  const right = viewport.x + viewport.width - cx;
-  const top = cy - viewport.y;
-  const bottom = viewport.y + viewport.height - cy;
-
-  const min = Math.min(left, right, top, bottom);
-
-  if (min === left) return { x: viewport.x + PORTAL_INSET, y: cy, side: "left" };
-  if (min === right) return { x: viewport.x + viewport.width - PORTAL_INSET, y: cy, side: "right" };
-  if (min === top) return { x: cx, y: viewport.y + PORTAL_INSET, side: "top" };
-  return { x: cx, y: viewport.y + viewport.height - PORTAL_INSET, side: "bottom" };
 }

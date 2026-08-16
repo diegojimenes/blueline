@@ -31,6 +31,7 @@ struct Tty {
     master: Box<dyn MasterPty + Send>,
     child: Box<dyn portable_pty::Child + Send + Sync>,
     writer: Box<dyn Write + Send>,
+    #[allow(dead_code)]
     read_thread: std::thread::JoinHandle<()>,
 }
 
@@ -98,7 +99,7 @@ pub fn spawn_pty(
         .openpty(size)
         .map_err(|e| format!("abrir pty: {e}"))?;
 
-    let mut master = pair.master;
+    let master = pair.master;
     let mut cmd = CommandBuilder::new(default_shell());
     cmd.cwd(cwd);
     cmd.env("TERM", "xterm-256color");
@@ -119,7 +120,7 @@ pub fn spawn_pty(
     let read_thread = std::thread::spawn(move || {
         let mut carry: Vec<u8> = Vec::new();
         let mut buf = [0u8; 8192];
-        let mut exit_code = -1;
+        let exit_code = -1;
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => break,

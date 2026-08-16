@@ -10,6 +10,7 @@ import type { HistoryEntry, LensId, NavigationState, NodeId, ProjectConfig } fro
 import type { SerializedGraph, SerializedNode } from "./serialize";
 import { canonicalPathOf, navigationToNode, nodeById, upNavigation, visibleNodes } from "./navigation";
 import { moduleOfPath } from "./analyze/build";
+import { queryGraph } from "./query";
 
 export interface CommandResult {
   nav: NavigationState;
@@ -52,6 +53,9 @@ export function runCommand(
       return cmdLs(graph, nav, opts);
     case "lens":
       return cmdLens(nav, arg, opts);
+    case "query":
+    case "q":
+      return cmdQuery(graph, nav, arg, opts);
     case "help":
       return cmdHelp(nav);
     default:
@@ -142,6 +146,42 @@ export function cmdLens(nav: NavigationState, arg: string, opts: CommandOptions 
   };
 }
 
+export function cmdQuery(
+  graph: SerializedGraph,
+  nav: NavigationState,
+  arg: string,
+  opts: CommandOptions = {},
+): CommandResult {
+  if (!arg) {
+    return {
+      nav,
+      entries: [],
+      lines: ["uso: query <expressao> — ex.: query kind:class layer:domain coupling:>2"],
+      target: null,
+    };
+  }
+
+  const matches = queryGraph(graph, arg, opts.config ?? {});
+  const lines: string[] = [];
+
+  if (matches.length === 0) {
+    lines.push(`nenhum nó correspondeu à query: "${arg}"`);
+  } else {
+    lines.push(`encontrado${matches.length === 1 ? "" : "s"} ${matches.length} nó${matches.length === 1 ? "" : "s"}:`);
+    for (const m of matches) {
+      lines.push(`  ${m.kind.padEnd(8)} ${canonicalPathOf(graph, m.id, opts.config ?? {})}`);
+    }
+  }
+
+  const firstTarget = matches.length === 1 ? matches[0].id : null;
+  return {
+    nav,
+    entries: [],
+    lines,
+    target: firstTarget,
+  };
+}
+
 export function cmdHelp(nav: NavigationState): CommandResult {
   return {
     nav,
@@ -151,6 +191,7 @@ export function cmdHelp(nav: NavigationState): CommandResult {
       "  up               sobe um nível (foco pai)",
       "  ls               lista nós do nível atual",
       "  lens <lens>      layers | coupling | domain",
+      "  query <expr>     busca declarativa — ex.: query kind:class layer:domain",
       "  clear            limpa o terminal",
       "  help             esta ajuda",
     ],

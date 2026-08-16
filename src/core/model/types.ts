@@ -14,13 +14,22 @@ export type LensId = "layers" | "coupling" | "domain";
 export type Node =
   | { kind: "project"; id: NodeId; name: string }
   | { kind: "module"; id: NodeId; name: string; path: string }
-  | { kind: "class"; id: NodeId; name: string; file: string; startLine: number }
+  | {
+      kind: "class";
+      id: NodeId;
+      name: string;
+      file: string;
+      startLine: number;
+      endLine?: number;
+      isSecondary?: boolean;
+    }
   | {
       kind: "method";
       id: NodeId;
       name: string;
       file: string;
       startLine: number;
+      endLine?: number;
       owner: NodeId;
     }
   | {
@@ -29,6 +38,7 @@ export type Node =
       name: string;
       file: string;
       startLine: number;
+      endLine?: number;
       owner: NodeId;
     };
 

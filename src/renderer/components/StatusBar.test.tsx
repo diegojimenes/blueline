@@ -26,4 +26,19 @@ describe("StatusBar", () => {
     render(<StatusBar />);
     expect(screen.getByText("sistema")).toBeInTheDocument();
   });
+
+  it("mostra indicador de atenção do agente quando ativo (M10)", () => {
+    useStore.setState({
+      agentAttention: {
+        type: "attention",
+        agent: "Claude",
+        file: "src/auth.ts",
+        symbol: "login",
+        message: "refatorando",
+        timestamp: Date.now(),
+      },
+    });
+    render(<StatusBar />);
+    expect(screen.getByText(/Claude: login/)).toBeInTheDocument();
+  });
 });

@@ -10,6 +10,7 @@ export function StatusBar() {
   const watcherTime = useStore((s) => s.watcherTime);
   const gitRepo = useStore((s) => s.gitRepo);
   const gitDirty = useStore((s) => s.gitDirty);
+  const agentAttention = useStore((s) => s.agentAttention);
   const revision = graph?.revision ?? 0;
 
   const path = focus && graph ? canonicalPathOf(graph, focus) : "sistema";
@@ -22,6 +23,12 @@ export function StatusBar() {
       <span className="status-segment">nível {level}</span>
       <span className="status-segment">lente {lens}</span>
       <span className="status-segment status-path">{path}</span>
+      {agentAttention && (
+        <span className="status-segment status-agent">
+          🤖 {agentAttention.agent}: {agentAttention.symbol || agentAttention.file}
+          {agentAttention.message ? ` (${agentAttention.message})` : ""}
+        </span>
+      )}
       <span className="status-segment">rev {revision}</span>
       <span className="status-segment">{gitText}</span>
       <span className="status-segment">{watcherText}</span>

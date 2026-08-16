@@ -131,13 +131,23 @@ function extractSymbols(file: string, root: TsNode): FileSymbols {
             methodRanges.push(symbol);
           }
         }
-        classes.push({ name, startLine: node.startPosition.row + 1, methods: classMethods });
+        classes.push({
+          name,
+          startLine: node.startPosition.row + 1,
+          endLine: node.endPosition.row + 1,
+          methods: classMethods,
+        });
         break;
       }
       case "import_statement": {
         const source = node.childForFieldName("source");
         if (source) {
-          imports.push({ from: unquote(source.text), symbols: collectImportSymbols(node) });
+          const { symbols, items, defaultOrNamespace } = collectImportInfo(node);
+          const imp: ImportSymbol = { from: unquote(source.text) };
+          if (symbols) imp.symbols = symbols;
+          if (items) imp.items = items;
+          if (defaultOrNamespace) imp.defaultOrNamespace = defaultOrNamespace;
+          imports.push(imp);
         }
         break;
       }
@@ -150,10 +160,11 @@ function extractSymbols(file: string, root: TsNode): FileSymbols {
         break;
       }
       case "call_expression": {
-        const target = calleeName(node.childForFieldName("function"));
-        if (target) {
+        const callee = extractCallee(node.childForFieldName("function"));
+        if (callee) {
           calls.push({
-            target,
+            target: callee.target,
+            receiver: callee.receiver,
             line: node.startPosition.row + 1,
             col: node.startPosition.column + 1,
           });
@@ -208,11 +219,17 @@ function functionSymbolOf(node: TsNode): MethodSymbol | null {
   return null;
 }
 
-function calleeName(fn: TsNode | null): string | undefined {
+function extractCallee(fn: TsNode | null): { target: string; receiver?: string } | undefined {
   if (!fn) return undefined;
-  if (fn.type === "identifier" || fn.type === "property_identifier") return fn.text;
+  if (fn.type === "identifier" || fn.type === "property_identifier") {
+    return { target: fn.text };
+  }
   if (fn.type === "member_expression") {
-    return fn.childForFieldName("property")?.text;
+    const prop = fn.childForFieldName("property")?.text;
+    const obj = fn.childForFieldName("object")?.text;
+    if (prop) {
+      return { target: prop, receiver: obj };
+    }
   }
   return undefined;
 }
@@ -227,19 +244,60 @@ function findOwner(ranges: MethodSymbol[], line: number): string | undefined {
   return owner?.name;
 }
 
-function collectImportSymbols(node: TsNode): string[] | undefined {
+function collectImportInfo(node: TsNode): {
+  symbols?: string[];
+  items?: { name: string; alias?: string }[];
+  defaultOrNamespace?: string;
+} {
   const clause = node.namedChildren.find((c) => c.type === "import_clause");
-  if (!clause) return undefined;
+  if (!clause) return {};
+
   const symbols: string[] = [];
-  const visit = (n: TsNode): void => {
-    if (n.type === "import_specifier" || n.type === "namespace_import") {
-      const name = n.childForFieldName("name");
-      if (name?.text) symbols.push(name.text);
+  const items: { name: string; alias?: string }[] = [];
+  let defaultOrNamespace: string | undefined;
+
+  for (const child of clause.namedChildren) {
+    if (child.type === "identifier") {
+      defaultOrNamespace = child.text;
+      symbols.push(child.text);
+      items.push({ name: child.text });
+    } else if (child.type === "namespace_import") {
+      const name = child.childForFieldName("name")?.text || child.text.replace(/^\*\s*as\s*/, "");
+      if (name) {
+        defaultOrNamespace = name;
+        symbols.push(name);
+      }
+    } else if (child.type === "named_imports") {
+      for (const spec of child.namedChildren) {
+        if (spec.type === "import_specifier") {
+          const origName = spec.childForFieldName("name")?.text;
+          const alias = spec.childForFieldName("alias")?.text;
+          if (origName) {
+            symbols.push(origName);
+            items.push({ name: origName, alias });
+          }
+        }
+      }
     }
-    for (const child of n.namedChildren) visit(child);
+  }
+
+  // Fallback se não pegou nada estruturado
+  if (symbols.length === 0) {
+    const visit = (n: TsNode): void => {
+      if (n.type === "import_specifier" || n.type === "namespace_import") {
+        const name = n.childForFieldName("name");
+        if (name?.text && !symbols.includes(name.text)) symbols.push(name.text);
+      }
+      for (const ch of n.namedChildren) visit(ch);
+    };
+    visit(clause);
+  }
+
+  return {
+    symbols: symbols.length > 0 ? symbols : undefined,
+    items: items.length > 0 ? items : undefined,
+    defaultOrNamespace,
   };
-  visit(clause);
-  return symbols.length > 0 ? symbols : undefined;
 }
 
 function collectExportSymbols(node: TsNode): string[] | undefined {

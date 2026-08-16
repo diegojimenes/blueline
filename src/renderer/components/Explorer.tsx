@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Ref, type ReactNode } from "react";
 import { ancestorChain, moduleOfPath, type NodeId, type SerializedNode } from "../../core";
 import { useStore } from "../store";
 
@@ -42,8 +42,7 @@ export function Explorer() {
     };
   }, [graph, config]);
 
-  // Mantém a trilha do nó selecionado expandida (sync seleção ↔ árvore),
-  // mas respeita colapso manual: só re-expande quando a trilha some da tela.
+  // Mantém a trilha do nó selecionado expandida
   useEffect(() => {
     if (!graph || !selected) return;
     const ancestors = ancestorChain(graph, selected, config);
@@ -79,7 +78,12 @@ export function Explorer() {
 
   return (
     <section className="panel panel-explorer" aria-label="Explorer">
-      <div className="panel-title">Explorer</div>
+      <div className="panel-title">
+        <span>Explorer</span>
+        {gitDirty.length > 0 && (
+          <span className="badge badge-amber">{gitDirty.length} modificado{gitDirty.length === 1 ? "" : "s"}</span>
+        )}
+      </div>
       <div className="panel-body explorer-body">
         <ul className="tree" role="tree">
           <TreeItem
@@ -96,76 +100,76 @@ export function Explorer() {
             }}
             innerRef={selected === project.id ? selectedRef : undefined}
           >
-              {tree.modules.map((m) => (
-                <TreeItem
-                  key={m.id}
-                  node={m}
-                  label={m.name}
-                  depth={1}
-                  expanded={expanded.has(m.id)}
-                  hasChildren={tree.classesOf(m).length > 0}
-                  isSelected={selected === m.id}
-                  onToggle={() => toggle(m.id)}
-                  onSelect={() => {
-                    if (tree.classesOf(m).length > 0) toggle(m.id);
-                    gotoId(m.id);
-                  }}
-                  innerRef={selected === m.id ? selectedRef : undefined}
-                >
-                  {tree.classesOf(m).map((c) => (
-                    <TreeItem
-                      key={c.id}
-                      node={c}
-                      label={c.name}
-                      depth={2}
-                      expanded={expanded.has(c.id)}
-                      hasChildren={tree.methodsOf(c).length > 0}
-                      isSelected={selected === c.id}
-                      onToggle={() => toggle(c.id)}
-                      onSelect={() => {
-                        if (tree.methodsOf(c).length > 0) toggle(c.id);
-                        gotoId(c.id);
-                      }}
-                      dirty={gitDirty.includes(c.file)}
-                      innerRef={selected === c.id ? selectedRef : undefined}
-                    >
-                      {tree.methodsOf(c).map((me) => (
-                        <TreeItem
-                          key={me.id}
-                          node={me}
-                          label={me.name}
-                          depth={3}
-                          expanded={expanded.has(me.id)}
-                          hasChildren={tree.localsOf(me).length > 0}
-                          isSelected={selected === me.id}
-                          onToggle={() => toggle(me.id)}
-                          onSelect={() => {
-                            if (tree.localsOf(me).length > 0) toggle(me.id);
-                            gotoId(me.id);
-                          }}
-                          innerRef={selected === me.id ? selectedRef : undefined}
-                        >
-                          {tree.localsOf(me).map((l) => (
-                            <TreeItem
-                              key={l.id}
-                              node={l}
-                              label={l.name}
-                              depth={4}
-                              expanded={false}
-                              hasChildren={false}
-                              isSelected={selected === l.id}
-                              onToggle={() => toggle(l.id)}
-                              onSelect={() => gotoId(l.id)}
-                              innerRef={selected === l.id ? selectedRef : undefined}
-                            />
-                          ))}
-                        </TreeItem>
-                      ))}
-                    </TreeItem>
-                  ))}
-                </TreeItem>
-              ))}
-            </TreeItem>
+            {tree.modules.map((m) => (
+              <TreeItem
+                key={m.id}
+                node={m}
+                label={m.name}
+                depth={1}
+                expanded={expanded.has(m.id)}
+                hasChildren={tree.classesOf(m).length > 0}
+                isSelected={selected === m.id}
+                onToggle={() => toggle(m.id)}
+                onSelect={() => {
+                  if (tree.classesOf(m).length > 0) toggle(m.id);
+                  gotoId(m.id);
+                }}
+                innerRef={selected === m.id ? selectedRef : undefined}
+              >
+                {tree.classesOf(m).map((c) => (
+                  <TreeItem
+                    key={c.id}
+                    node={c}
+                    label={c.name}
+                    depth={2}
+                    expanded={expanded.has(c.id)}
+                    hasChildren={tree.methodsOf(c).length > 0}
+                    isSelected={selected === c.id}
+                    onToggle={() => toggle(c.id)}
+                    onSelect={() => {
+                      if (tree.methodsOf(c).length > 0) toggle(c.id);
+                      gotoId(c.id);
+                    }}
+                    dirty={gitDirty.includes(c.file)}
+                    innerRef={selected === c.id ? selectedRef : undefined}
+                  >
+                    {tree.methodsOf(c).map((me) => (
+                      <TreeItem
+                        key={me.id}
+                        node={me}
+                        label={me.name}
+                        depth={3}
+                        expanded={expanded.has(me.id)}
+                        hasChildren={tree.localsOf(me).length > 0}
+                        isSelected={selected === me.id}
+                        onToggle={() => toggle(me.id)}
+                        onSelect={() => {
+                          if (tree.localsOf(me).length > 0) toggle(me.id);
+                          gotoId(me.id);
+                        }}
+                        innerRef={selected === me.id ? selectedRef : undefined}
+                      >
+                        {tree.localsOf(me).map((l) => (
+                          <TreeItem
+                            key={l.id}
+                            node={l}
+                            label={l.name}
+                            depth={4}
+                            expanded={false}
+                            hasChildren={false}
+                            isSelected={selected === l.id}
+                            onToggle={() => toggle(l.id)}
+                            onSelect={() => gotoId(l.id)}
+                            innerRef={selected === l.id ? selectedRef : undefined}
+                          />
+                        ))}
+                      </TreeItem>
+                    ))}
+                  </TreeItem>
+                ))}
+              </TreeItem>
+            ))}
+          </TreeItem>
         </ul>
       </div>
     </section>
@@ -190,17 +194,31 @@ interface TreeItemProps {
   onToggle: () => void;
   onSelect: () => void;
   dirty?: boolean;
-  innerRef?: React.Ref<HTMLLIElement>;
-  children?: React.ReactNode;
+  innerRef?: Ref<HTMLLIElement>;
+  children?: ReactNode;
 }
 
-function TreeItem({ node, label, depth, expanded, hasChildren, isSelected, onToggle, onSelect, dirty, innerRef, children }: TreeItemProps) {
+function TreeItem({
+  node,
+  label,
+  depth,
+  expanded,
+  hasChildren,
+  isSelected,
+  onToggle,
+  onSelect,
+  dirty,
+  innerRef,
+  children,
+}: TreeItemProps) {
   const kindClass = `tree-item tree-kind-${node.kind}`;
+  const icon = getSemanticIcon(node.kind);
+
   return (
     <li className={kindClass} role="treeitem" aria-selected={isSelected} ref={innerRef}>
       <div
         className={isSelected ? "tree-row tree-row-selected" : "tree-row"}
-        style={{ paddingLeft: 8 + depth * 14 }}
+        style={{ paddingLeft: 6 + depth * 14 }}
       >
         <button
           type="button"
@@ -211,11 +229,29 @@ function TreeItem({ node, label, depth, expanded, hasChildren, isSelected, onTog
           {hasChildren ? (expanded ? "▾" : "▸") : ""}
         </button>
         <button type="button" className="tree-label" onClick={onSelect}>
-          {dirty && <span className="tree-dirty" title="arquivo modificado">●</span>}
-          {label}
+          <span className="tree-item-icon">{icon}</span>
+          <span className="tree-item-text">{label}</span>
+          {dirty && <span className="tree-dirty" title="arquivo modificado">⚡</span>}
         </button>
       </div>
       {expanded && hasChildren && <ul role="group">{children}</ul>}
     </li>
   );
+}
+
+function getSemanticIcon(kind: string): string {
+  switch (kind) {
+    case "project":
+      return "📁";
+    case "module":
+      return "📦";
+    case "class":
+      return "🏛️";
+    case "method":
+      return "⚡";
+    case "local":
+      return "🔀";
+    default:
+      return "•";
+  }
 }

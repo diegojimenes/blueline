@@ -38,6 +38,7 @@ describe("TypeScriptParser", () => {
       {
         name: "A",
         startLine: 3,
+        endLine: 9,
         methods: [
           { name: "go", startLine: 4, endLine: 7 },
           { name: "run", startLine: 8, endLine: 8 },
@@ -74,7 +75,7 @@ describe("TypeScriptParser", () => {
 
   it("extrai imports com símbolos (incluindo alias)", () => {
     const symbols = parser.parseFile("src/a.ts", CODE);
-    expect(symbols.imports).toEqual([{ from: "./b", symbols: ["B"] }]);
+    expect(symbols.imports).toEqual([{ from: "./b", symbols: ["B"], items: [{ name: "B", alias: "Bee" }] }]);
   });
 
   it("extrai calls e atribui ao método dono (range mais interno)", () => {

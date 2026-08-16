@@ -129,6 +129,17 @@ fn git_status(state: State<'_, AppState>, project_path: String) -> Result<GitSta
     Ok(GitStatus { repo: true, dirty: git.dirty_files(dir) })
 }
 
+/// Diff unificado de um arquivo no repositório.
+#[tauri::command]
+fn git_diff(state: State<'_, AppState>, project_path: String, rel_path: String) -> Result<String, String> {
+    let git = state.git.clone();
+    let dir = Path::new(&project_path);
+    if !git.is_repo(dir) {
+        return Err("Não é um repositório git".into());
+    }
+    git.diff_file(dir, &rel_path)
+}
+
 /// Lê o conteúdo atual de um arquivo relativo ao projeto (fase de re-parse).
 #[tauri::command]
 fn file_read(project_path: String, rel_path: String) -> Result<String, String> {
@@ -164,6 +175,7 @@ pub fn run() {
             watch_start,
             watch_stop,
             git_status,
+            git_diff,
             file_read,
             read_project
         ])

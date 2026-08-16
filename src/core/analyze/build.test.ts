@@ -109,3 +109,62 @@ describe("buildGraph — helpers", () => {
     expect(resolveImportTarget("./nao-existe", "src/gateway/Gateway.ts", files)).toBeUndefined();
   });
 });
+
+describe("buildGraph — resolução avançada M8", () => {
+  it("resolve chamadas com this.metodo() e aliases de importação", () => {
+    const customFiles = [
+      {
+        path: "src/calc.ts",
+        symbols: {
+          file: "src/calc.ts",
+          classes: [
+            {
+              name: "Calculator",
+              startLine: 1,
+              methods: [
+                { name: "add", startLine: 2, endLine: 4 },
+                { name: "sumAll", startLine: 5, endLine: 10 },
+              ],
+            },
+          ],
+          methods: [],
+          locals: [],
+          imports: [],
+          calls: [
+            { target: "add", receiver: "this", line: 7, col: 5, owner: "sumAll" },
+          ],
+        },
+      },
+      {
+        path: "src/runner.ts",
+        symbols: {
+          file: "src/runner.ts",
+          classes: [],
+          methods: [{ name: "run", startLine: 1, endLine: 5 }],
+          locals: [],
+          imports: [
+            {
+              from: "./calc",
+              symbols: ["add"],
+              items: [{ name: "add", alias: "sum" }],
+            },
+          ],
+          calls: [
+            { target: "sum", line: 3, col: 5, owner: "run" },
+          ],
+        },
+      },
+    ];
+
+    const result = buildGraph(customFiles, "/test/root");
+    expect(result.stats.callsResolved).toBe(2);
+    expect(result.stats.callsUnresolved).toBe(0);
+
+    const sumAllId = "method:src/calc.ts:class:src/calc.ts:Calculator:sumAll";
+    const addId = "method:src/calc.ts:class:src/calc.ts:Calculator:add";
+    const runId = "method:src/runner.ts:class:src/runner.ts:runner:run";
+
+    expect(result.graph.edges.has(`call:${sumAllId}:${addId}`)).toBe(true);
+    expect(result.graph.edges.has(`call:${runId}:${addId}`)).toBe(true);
+  });
+});

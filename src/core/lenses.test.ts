@@ -55,6 +55,15 @@ describe("domainOf (lente Domínio)", () => {
     const graph = await loadSerialized("basic");
     expect(domainOf(nodeById(graph, "module:gateway")!)).toBe("outros");
   });
+
+  it("reconhece domínios comuns como physics, gameplay, render e ai por heurística", () => {
+    const node = (name: string, path: string) => ({ id: "x", kind: "module" as const, name, path });
+    expect(domainOf(node("RigidBody", "physics/collider"))).toBe("physics");
+    expect(domainOf(node("Player", "gameplay/character"))).toBe("gameplay");
+    expect(domainOf(node("MeshRenderer", "render/shader"))).toBe("render");
+    expect(domainOf(node("AgentBehavior", "ai/navmesh"))).toBe("ai");
+    expect(domainOf(node("SoundEmitter", "audio/sfx"))).toBe("audio");
+  });
 });
 
 describe("couplingOf (lente Acoplamento)", () => {

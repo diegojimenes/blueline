@@ -104,34 +104,43 @@ exports[`toJSON > produz grafo golden estável (fixture basic) 1`] = `
   ],
   "nodes": [
     {
+      "endLine": 5,
       "file": "src/auth/AuthService.ts",
       "id": "class:src/auth/AuthService.ts:AuthService",
+      "isSecondary": false,
       "kind": "class",
       "name": "AuthService",
       "startLine": 1,
     },
     {
+      "endLine": 11,
       "file": "src/gateway/Gateway.ts",
       "id": "class:src/gateway/Gateway.ts:Gateway",
+      "isSecondary": false,
       "kind": "class",
       "name": "Gateway",
       "startLine": 4,
     },
     {
+      "endLine": 7,
       "file": "src/pedidos/Pedido.ts",
       "id": "class:src/pedidos/Pedido.ts:Pedido",
+      "isSecondary": false,
       "kind": "class",
       "name": "Pedido",
       "startLine": 1,
     },
     {
+      "endLine": 9,
       "file": "src/pedidos/PedidoService.ts",
       "id": "class:src/pedidos/PedidoService.ts:PedidoService",
+      "isSecondary": false,
       "kind": "class",
       "name": "PedidoService",
       "startLine": 3,
     },
     {
+      "endLine": 4,
       "file": "src/auth/AuthService.ts",
       "id": "method:src/auth/AuthService.ts:class:src/auth/AuthService.ts:AuthService:login",
       "kind": "method",
@@ -140,6 +149,7 @@ exports[`toJSON > produz grafo golden estável (fixture basic) 1`] = `
       "startLine": 2,
     },
     {
+      "endLine": 10,
       "file": "src/gateway/Gateway.ts",
       "id": "method:src/gateway/Gateway.ts:class:src/gateway/Gateway.ts:Gateway:start",
       "kind": "method",
@@ -148,6 +158,7 @@ exports[`toJSON > produz grafo golden estável (fixture basic) 1`] = `
       "startLine": 5,
     },
     {
+      "endLine": 6,
       "file": "src/pedidos/Pedido.ts",
       "id": "method:src/pedidos/Pedido.ts:class:src/pedidos/Pedido.ts:Pedido:calcularTotal",
       "kind": "method",
@@ -156,6 +167,7 @@ exports[`toJSON > produz grafo golden estável (fixture basic) 1`] = `
       "startLine": 4,
     },
     {
+      "endLine": 8,
       "file": "src/pedidos/PedidoService.ts",
       "id": "method:src/pedidos/PedidoService.ts:class:src/pedidos/PedidoService.ts:PedidoService:criarPedido",
       "kind": "method",
@@ -235,7 +247,7 @@ exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
       "from": "class:src/main.ts:main",
       "id": "import:class:src/main.ts:main:class:src/helpers/format.ts:format",
       "meta": {
-        "symbol": undefined,
+        "symbol": "title",
       },
       "to": "class:src/helpers/format.ts:format",
       "type": "import",
@@ -296,27 +308,34 @@ exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
   ],
   "nodes": [
     {
+      "endLine": 5,
       "file": "src/helpers/format.ts",
       "id": "class:src/helpers/format.ts:format",
+      "isSecondary": false,
       "kind": "class",
       "name": "format",
       "startLine": 1,
     },
     {
+      "endLine": 9,
       "file": "src/main.ts",
       "id": "class:src/main.ts:main",
+      "isSecondary": false,
       "kind": "class",
       "name": "main",
       "startLine": 1,
     },
     {
+      "endLine": 5,
       "file": "src/utils.ts",
       "id": "class:src/utils.ts:utils",
+      "isSecondary": false,
       "kind": "class",
       "name": "utils",
       "startLine": 1,
     },
     {
+      "endLine": 5,
       "file": "src/helpers/format.ts",
       "id": "method:src/helpers/format.ts:class:src/helpers/format.ts:format:title",
       "kind": "method",
@@ -325,6 +344,7 @@ exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
       "startLine": 3,
     },
     {
+      "endLine": 9,
       "file": "src/main.ts",
       "id": "method:src/main.ts:class:src/main.ts:main:run",
       "kind": "method",
@@ -333,6 +353,7 @@ exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
       "startLine": 4,
     },
     {
+      "endLine": 5,
       "file": "src/utils.ts",
       "id": "method:src/utils.ts:class:src/utils.ts:utils:lower",
       "kind": "method",
@@ -341,6 +362,7 @@ exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
       "startLine": 5,
     },
     {
+      "endLine": 3,
       "file": "src/utils.ts",
       "id": "method:src/utils.ts:class:src/utils.ts:utils:upper",
       "kind": "method",
