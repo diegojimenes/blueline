@@ -199,7 +199,7 @@ exports[`toJSON > produz grafo golden estável (fixture basic) 1`] = `
       "name": "basic",
     },
   ],
-  "projectRoot": "/home/jo/Documentos/code/fixtures/basic",
+  "projectRoot": "<projectRoot>/fixtures/basic",
   "revision": 0,
 }
 `;
@@ -388,7 +388,7 @@ exports[`toJSON > produz grafo golden estável (fixture messy) 1`] = `
       "name": "messy",
     },
   ],
-  "projectRoot": "/home/jo/Documentos/code/fixtures/messy",
+  "projectRoot": "<projectRoot>/fixtures/messy",
   "revision": 0,
 }
 `;

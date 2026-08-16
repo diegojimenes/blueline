@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildGraph } from "./analyze/build";
 import { toJSON } from "./serialize";
-import { fixturePath, loadFixture } from "./test-helpers";
+import { loadFixture } from "./test-helpers";
 
 let basicJson: ReturnType<typeof toJSON>;
 let messyJson: ReturnType<typeof toJSON>;
@@ -9,9 +9,9 @@ let nestedJson: ReturnType<typeof toJSON>;
 
 beforeAll(async () => {
   const [b, m, n] = await Promise.all([loadFixture("basic"), loadFixture("messy"), loadFixture("nested")]);
-  basicJson = toJSON(buildGraph(b.files, fixturePath("basic")).graph);
-  messyJson = toJSON(buildGraph(m.files, fixturePath("messy")).graph);
-  nestedJson = toJSON(buildGraph(n.files, fixturePath("nested")).graph);
+  basicJson = toJSON(buildGraph(b.files, "<projectRoot>/fixtures/basic").graph);
+  messyJson = toJSON(buildGraph(m.files, "<projectRoot>/fixtures/messy").graph);
+  nestedJson = toJSON(buildGraph(n.files, "<projectRoot>/fixtures/nested").graph);
 });
 
 describe("toJSON", () => {
@@ -58,5 +58,5 @@ describe("toJSON", () => {
 
 async function buildAgain(name: string) {
   const { files } = await loadFixture(name);
-  return toJSON(buildGraph(files, fixturePath(name)).graph);
+  return toJSON(buildGraph(files, `<projectRoot>/fixtures/${name}`).graph);
 }
