@@ -139,7 +139,7 @@ describe("cmdGoto — navegação 1→4 (specs/12-milestones.md, M2)", () => {
   it("runCommand despacha goto/up/ls/lens/help e desconhecido", () => {
     expect(runCommand(graph, nav, "lens domain", { now: NOW }).nav.lens).toBe("domain");
     expect(runCommand(graph, nav, "help", { now: NOW }).lines.length).toBeGreaterThan(2);
-    expect(runCommand(graph, nav, "bogus", { now: NOW }).lines[0]).toContain("desconhecido");
+    expect(runCommand(graph, nav, "bogus", { now: NOW }).lines[0]).toContain("unknown");
     expect(cmdLens(nav, "nope").lines[0]).toContain("inválida");
     expect(cmdHelp(nav).lines.length).toBeGreaterThan(0);
   });
@@ -225,5 +225,44 @@ describe("nível 5 — funções locais (fixture nested)", () => {
     expect(text).toContain("double");
     expect(text).toContain("sum");
     expect(text).toContain("(local)");
+  });
+});
+
+
+describe("novos comandos (impact, deps, dependents, trace, changed)", () => {
+  let graph: SerializedGraph;
+  let nav: NavigationState;
+
+  beforeEach(async () => {
+    graph = await loadSerialized("basic");
+    nav = { focus: null, level: 1, lens: "layers", trail: [], selected: null, visited: new Set() };
+  });
+
+  it("query impact", () => {
+    const result = runCommand(graph, nav, "impact gateway.Gateway", { config: {} });
+    expect(result.lines.join("\n")).toContain("impact:");
+    expect(result.lines.join("\n")).toContain("gateway.Gateway");
+    expect(result.target).toBe("class:src/gateway/Gateway.ts:Gateway");
+  });
+
+  it("query deps", () => {
+    const result = runCommand(graph, nav, "deps auth.AuthService", { config: {} });
+    expect(result.lines.join("\n")).toContain("deps:");
+  });
+
+  it("query dependents", () => {
+    const result = runCommand(graph, nav, "dependents auth.AuthService", { config: {} });
+    expect(result.lines.join("\n")).toContain("dependents:");
+  });
+
+  it("query trace", () => {
+    const result = runCommand(graph, nav, "trace gateway.Gateway", { config: {} });
+    expect(result.lines.join("\n")).toContain("trace:");
+  });
+
+  it("query changed", () => {
+    const result = runCommand(graph, nav, "changed", { gitDirty: ["src/gateway/Gateway.ts"], config: {} });
+    expect(result.lines.join("\n")).toContain("changed:");
+    expect(result.lines.join("\n")).toContain("Gateway");
   });
 });

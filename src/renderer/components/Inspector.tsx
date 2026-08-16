@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  canonicalPathOf,
-  couplingOf,
-  domainOf,
-  layerOf,
-  moduleOfPath,
-  type SerializedGraph,
-  type SerializedNode,
-} from "../../core";
+import { canonicalPathOf, couplingOf, domainOf, layerOf, moduleOfPath, computeImpactSummary, buildAgentContext, type SerializedGraph, type SerializedNode } from "../../core";
 import { lensColor } from "../palette";
 import { useStore } from "../store";
 import { useTranslation } from "../i18n";
@@ -161,7 +153,10 @@ export function Inspector() {
           </div>
         ) : null}
 
-        {/* Card de Identidade do Símbolo */}
+        {/* Copy Context for Agent — proeminente quando modificado (E) */}
+        {isDirty && <CopyContextButton graph={graph} nodeId={node.id} />}
+
+        {/* Symbol Identity Card */}
         <div className="symbol-identity-card">
           <div className="symbol-identity-header">
             <span className="symbol-canonical">{canonicalPathOf(graph, node.id)}</span>
@@ -212,12 +207,15 @@ export function Inspector() {
           </div>
         </div>
 
-        {/* Alerta de Impacto em Chamadores */}
+        {/* Impact alert (legacy inline alert) */}
         {(node.kind === "method" || node.kind === "local") && (
           <ImpactAlert node={node} graph={graph} isDirty={isDirty} />
         )}
 
-        {/* Lista Visual de Chamadores e Chamadas */}
+        {/* Impact View — blast radius full panel (A) */}
+        <ImpactView graph={graph} nodeId={node.id} diffSummary={diffSummary ?? undefined} config={config} onGoto={gotoId} />
+
+        {/* Call cards */}
         {(node.kind === "method" || node.kind === "local") && (
           <CallCards node={node} graph={graph} onGoto={gotoId} />
         )}
@@ -270,6 +268,29 @@ function SystemDashboard({
   const reviewProgressPct =
     dirtyClasses.length > 0 ? Math.round((reviewedCount / dirtyClasses.length) * 100) : 100;
 
+  // Change Metrics (F)
+  const changeMetrics = useMemo(() => {
+    const filesChanged = diffSummary ? diffSummary.fileSummaries.size : gitDirty.length;
+    const symbolsChanged = diffSummary ? diffSummary.symbols.size : dirtyClasses.length;
+    const modulesSet = new Set<string>();
+    
+    if (diffSummary) {
+      for (const sym of diffSummary.symbols.values()) {
+        if (sym.file) modulesSet.add(moduleOfPath(sym.file, config));
+      }
+    } else {
+      for (const file of gitDirty) {
+        modulesSet.add(moduleOfPath(file, config));
+      }
+    }
+
+    return {
+      filesChanged,
+      symbolsChanged,
+      modulesAffected: modulesSet.size,
+    };
+  }, [diffSummary, gitDirty, dirtyClasses, config]);
+
   return (
     <div className="system-dashboard">
       <div className="dashboard-stats-grid">
@@ -295,6 +316,29 @@ function SystemDashboard({
           </div>
         </div>
       </div>
+
+      {/* Change Metrics (F) */}
+      {(changeMetrics.filesChanged > 0) && (
+        <div className="dashboard-section">
+          <div className="dashboard-section-header">
+            <h3>{t("dashboard_metrics_title")}</h3>
+          </div>
+          <div className="dashboard-metrics-grid">
+            <div className="metric-item">
+              <span className="metric-value">{changeMetrics.modulesAffected}</span>
+              <span className="metric-label">{t("dashboard_affected_modules")}</span>
+            </div>
+            <div className="metric-item">
+              <span className="metric-value">{changeMetrics.symbolsChanged}</span>
+              <span className="metric-label">{t("dashboard_symbols_changed")}</span>
+            </div>
+            <div className="metric-item">
+              <span className="metric-value">{changeMetrics.filesChanged}</span>
+              <span className="metric-label">{t("dashboard_files_changed")}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Review Progress Bar */}
       {dirtyClasses.length > 0 && (
@@ -418,6 +462,128 @@ function SystemDashboard({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Copy Context for Agent button (E) */
+function CopyContextButton({ graph, nodeId }: { graph: SerializedGraph; nodeId: string }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const ctx = buildAgentContext(graph, nodeId);
+    await navigator.clipboard.writeText(ctx.summary);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      type="button"
+      className={`btn-copy-context ${copied ? "copied" : ""}`}
+      onClick={() => void handleCopy()}
+      title={t("inspector_copy_context_title")}
+    >
+      {copied ? t("inspector_copy_context_copied") : t("inspector_copy_context")}
+    </button>
+  );
+}
+
+/** Impact View — blast radius panel (A) */
+function ImpactView({
+  graph,
+  nodeId,
+  diffSummary,
+  config,
+  onGoto,
+}: {
+  graph: SerializedGraph;
+  nodeId: string;
+  diffSummary?: import("../../core").ProjectDiffSummary;
+  config: import("../../core").ProjectConfig;
+  onGoto: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const impact = computeImpactSummary(graph, nodeId, diffSummary, config);
+
+  // Only show if there are dependents or dependencies worth displaying
+  if (!impact || (impact.directDependents.length === 0 && impact.directDependencies.length === 0)) return null;
+
+  const levelKey =
+    impact.impactLevel === "HIGH"
+      ? "inspector_impact_high"
+      : impact.impactLevel === "MEDIUM"
+        ? "inspector_impact_medium"
+        : "inspector_impact_low";
+
+  const levelClass =
+    impact.impactLevel === "HIGH" ? "impact-high" : impact.impactLevel === "MEDIUM" ? "impact-medium" : "impact-low";
+
+  return (
+    <div className="impact-view-container">
+      <div className="impact-view-header">
+        <span className="impact-view-title">{t("inspector_impact_view")}</span>
+        <span className={`impact-level-badge ${levelClass}`}>
+          {t("inspector_impact_level")}: {t(levelKey)}
+        </span>
+      </div>
+
+      {/* Impact score bar */}
+      <div className="impact-score-bar-wrap">
+        <div
+          className={`impact-score-bar-fill ${levelClass}`}
+          style={{ width: `${impact.impactScore}%` }}
+        />
+        <span className="impact-score-label">{impact.impactScore}/100</span>
+      </div>
+
+      {/* Dependents (callers) */}
+      {impact.directDependents.length > 0 ? (
+        <div className="impact-section">
+          <div className="impact-section-title">
+            {t("inspector_impact_callers_section")} ({impact.directDependents.length})
+          </div>
+          <div className="impact-callers-list">
+            {impact.directDependents.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className="impact-caller-item"
+                onClick={() => onGoto(d.id)}
+              >
+                <span className="impact-caller-arrow">←</span>
+                <span className="impact-caller-name">{d.path}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="impact-none">{t("inspector_impact_none")}</p>
+      )}
+
+      {/* Affected modules */}
+      {impact.affectedModules.length > 0 && (
+        <div className="impact-meta-row">
+          <span className="impact-meta-label">{t("inspector_impact_affected_modules")}</span>
+          <span className="impact-meta-value">
+            {impact.affectedModules.map((m, i) => (
+              <span key={m}>
+                {i > 0 && " · "}
+                <span className="impact-module-chip">{m}</span>
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+
+      {/* Transitive depth */}
+      {impact.transitiveDepth > 0 && (
+        <div className="impact-meta-row">
+          <span className="impact-meta-label">{t("inspector_impact_transitive")}</span>
+          <span className="impact-meta-value">{impact.transitiveDepth}</span>
+        </div>
+      )}
     </div>
   );
 }

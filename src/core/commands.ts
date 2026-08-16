@@ -11,6 +11,7 @@ import type { SerializedGraph, SerializedNode } from "./serialize";
 import { canonicalPathOf, navigationToNode, nodeById, upNavigation, visibleNodes } from "./navigation";
 import { moduleOfPath } from "./analyze/build";
 import { queryGraph } from "./query";
+import { computeImpactSummary } from "./change-summary";
 
 export interface CommandResult {
   nav: NavigationState;
@@ -22,6 +23,8 @@ export interface CommandResult {
 export interface CommandOptions {
   config?: ProjectConfig;
   now?: number;
+  /** Files with git changes (for `changed` command) */
+  gitDirty?: string[];
 }
 
 export interface ParsedCommand {
@@ -56,10 +59,20 @@ export function runCommand(
     case "query":
     case "q":
       return cmdQuery(graph, nav, arg, opts);
+    case "impact":
+      return cmdImpact(graph, nav, arg, opts);
+    case "deps":
+      return cmdDeps(graph, nav, arg, opts);
+    case "dependents":
+      return cmdDependents(graph, nav, arg, opts);
+    case "trace":
+      return cmdTrace(graph, nav, arg, opts);
+    case "changed":
+      return cmdChanged(graph, nav, opts);
     case "help":
       return cmdHelp(nav);
     default:
-      return { nav, entries: [], lines: [`comando desconhecido: "${name}" — use help`], target: null };
+      return { nav, entries: [], lines: [`unknown command: "${name}" — type help`], target: null };
   }
 }
 
@@ -187,16 +200,182 @@ export function cmdHelp(nav: NavigationState): CommandResult {
     nav,
     entries: [],
     lines: [
-      "  goto <caminho>   navega — formato: modulo.Classe.metodo (ou nome único)",
-      "  up               sobe um nível (foco pai)",
-      "  ls               lista nós do nível atual",
-      "  lens <lens>      layers | coupling | domain",
-      "  query <expr>     busca declarativa — ex.: query kind:class layer:domain",
-      "  clear            limpa o terminal",
-      "  help             esta ajuda",
+      "  goto <path>       navigate — format: module.Class.method (or unique name)",
+      "  up                go up one level (parent focus)",
+      "  ls                list nodes at current level",
+      "  lens <lens>       layers | coupling | domain",
+      "  query <expr>      declarative search — e.g.: query kind:class layer:domain",
+      "  impact <symbol>   show blast radius of a symbol",
+      "  deps <symbol>     show direct dependencies (callees)",
+      "  dependents <sym>  show who depends on a symbol (callers)",
+      "  trace <symbol>    show transitive call chain (up to 3 levels)",
+      "  changed           list symbols in files with git changes",
+      "  clear             clear terminal",
+      "  help              this help",
     ],
     target: null,
   };
+}
+
+/** impact <symbol> — blast radius: dependents, affected modules */
+export function cmdImpact(
+  graph: SerializedGraph,
+  nav: NavigationState,
+  spec: string,
+  opts: CommandOptions = {},
+): CommandResult {
+  if (!spec) return { nav, entries: [], lines: ["usage: impact <symbol>"], target: null };
+  const resolved = resolveTarget(graph, spec, opts.config ?? {});
+  if ("error" in resolved) return { nav, entries: [], lines: [resolved.error], target: null };
+  const node = resolved.node;
+  const impact = computeImpactSummary(graph, node.id, undefined, opts.config ?? {});
+  if (!impact) return { nav, entries: [], lines: [`no impact data for: ${spec}`], target: null };
+
+  const lines: string[] = [
+    `impact: ${impact.canonicalPath}`,
+    `  level:       ${impact.impactLevel}  (score: ${impact.impactScore}/100)`,
+    `  dependents:  ${impact.directDependents.length}`,
+    `  depth:       ${impact.transitiveDepth} level${impact.transitiveDepth !== 1 ? "s" : ""}`,
+    `  modules:     ${impact.affectedModules.length > 0 ? impact.affectedModules.join(", ") : "none"}`,
+  ];
+
+  if (impact.directDependents.length > 0) {
+    lines.push("");
+    lines.push("  callers:");
+    for (const d of impact.directDependents) {
+      lines.push(`    ← ${d.path}`);
+    }
+  }
+
+  if (impact.directDependencies.length > 0) {
+    lines.push("");
+    lines.push("  calls:");
+    for (const d of impact.directDependencies) {
+      lines.push(`    → ${d.path}`);
+    }
+  }
+
+  return { nav, entries: [], lines, target: node.id };
+}
+
+/** deps <symbol> — outgoing call/import dependencies */
+export function cmdDeps(
+  graph: SerializedGraph,
+  nav: NavigationState,
+  spec: string,
+  opts: CommandOptions = {},
+): CommandResult {
+  if (!spec) return { nav, entries: [], lines: ["usage: deps <symbol>"], target: null };
+  const resolved = resolveTarget(graph, spec, opts.config ?? {});
+  if ("error" in resolved) return { nav, entries: [], lines: [resolved.error], target: null };
+  const node = resolved.node;
+
+  const callEdges = graph.edges.filter((e) => e.type === "call" && e.from === node.id);
+  const importEdges = graph.edges.filter((e) => e.type === "import" && e.from === node.id);
+
+  const lines: string[] = [`deps: ${canonicalPathOf(graph, node.id, opts.config ?? {})}`, ""];
+  if (callEdges.length === 0 && importEdges.length === 0) {
+    lines.push("  (no direct dependencies)");
+  } else {
+    for (const e of callEdges) lines.push(`  → ${canonicalPathOf(graph, e.to, opts.config ?? {})}`);
+    for (const e of importEdges) lines.push(`  import → ${canonicalPathOf(graph, e.to, opts.config ?? {})}`);
+  }
+
+  return { nav, entries: [], lines, target: node.id };
+}
+
+/** dependents <symbol> — incoming call edges (who depends on this) */
+export function cmdDependents(
+  graph: SerializedGraph,
+  nav: NavigationState,
+  spec: string,
+  opts: CommandOptions = {},
+): CommandResult {
+  if (!spec) return { nav, entries: [], lines: ["usage: dependents <symbol>"], target: null };
+  const resolved = resolveTarget(graph, spec, opts.config ?? {});
+  if ("error" in resolved) return { nav, entries: [], lines: [resolved.error], target: null };
+  const node = resolved.node;
+
+  const inEdges = graph.edges.filter((e) => e.type === "call" && e.to === node.id);
+  const lines: string[] = [`dependents: ${canonicalPathOf(graph, node.id, opts.config ?? {})}`, ""];
+  if (inEdges.length === 0) {
+    lines.push("  (no callers — leaf symbol)");
+  } else {
+    for (const e of inEdges) lines.push(`  ← ${canonicalPathOf(graph, e.from, opts.config ?? {})}`);
+  }
+
+  return { nav, entries: [], lines, target: node.id };
+}
+
+/** trace <symbol> — transitive call chain, BFS up to 3 levels */
+export function cmdTrace(
+  graph: SerializedGraph,
+  nav: NavigationState,
+  spec: string,
+  opts: CommandOptions = {},
+): CommandResult {
+  if (!spec) return { nav, entries: [], lines: ["usage: trace <symbol>"], target: null };
+  const resolved = resolveTarget(graph, spec, opts.config ?? {});
+  if ("error" in resolved) return { nav, entries: [], lines: [resolved.error], target: null };
+  const node = resolved.node;
+  const config = opts.config ?? {};
+
+  const rootPath = canonicalPathOf(graph, node.id, config);
+  const lines: string[] = [`trace: ${rootPath}`];
+
+  // BFS outgoing (callees)
+  const visited = new Set<NodeId>([node.id]);
+  let frontier = [node.id];
+  let depth = 0;
+  const MAX_DEPTH = 3;
+
+  while (frontier.length > 0 && depth < MAX_DEPTH) {
+    const next: NodeId[] = [];
+    const indent = "  ".repeat(depth + 1);
+    for (const id of frontier) {
+      const outs = graph.edges.filter((e) => e.type === "call" && e.from === id);
+      for (const e of outs) {
+        if (!visited.has(e.to)) {
+          visited.add(e.to);
+          next.push(e.to);
+          lines.push(`${indent}→ ${canonicalPathOf(graph, e.to, config)}`);
+        }
+      }
+    }
+    frontier = next;
+    depth++;
+  }
+
+  if (lines.length === 1) lines.push("  (no outgoing calls)");
+  return { nav, entries: [], lines, target: node.id };
+}
+
+/** changed — list symbols in files with git changes */
+export function cmdChanged(
+  graph: SerializedGraph,
+  nav: NavigationState,
+  opts: CommandOptions = {},
+): CommandResult {
+  const dirty = opts.gitDirty ?? [];
+  if (dirty.length === 0) {
+    return { nav, entries: [], lines: ["no git changes detected"], target: null };
+  }
+
+  const config = opts.config ?? {};
+  const changedNodes = graph.nodes.filter(
+    (n) => (n.kind === "class" || n.kind === "method") && "file" in n && dirty.includes(n.file),
+  );
+
+  const lines: string[] = [`changed: ${dirty.length} file${dirty.length !== 1 ? "s" : ""}, ${changedNodes.length} symbol${changedNodes.length !== 1 ? "s" : ""}`];
+  if (changedNodes.length === 0) {
+    lines.push("  (no structural symbols in changed files)");
+  } else {
+    for (const n of changedNodes) {
+      lines.push(`  ${n.kind.padEnd(8)} ${canonicalPathOf(graph, n.id, config)}`);
+    }
+  }
+
+  return { nav, entries: [], lines, target: changedNodes.length === 1 ? changedNodes[0].id : null };
 }
 
 export type TargetResolution = { node: SerializedNode } | { error: string };

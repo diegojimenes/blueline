@@ -29,4 +29,5 @@ export * from "./spatial-index";
 export * from "./storage/graph-cache";
 export * from "./query";
 export * from "./workspace";
+export * from "./change-summary";
 export { createTypeScriptParser } from "./parse/ts-parser";

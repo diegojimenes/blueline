@@ -59,7 +59,7 @@ describe("store · navegação M2", () => {
   it("comando desconhecido não muda navegação", () => {
     useStore.getState().dispatch("bogus xyz");
     const s = useStore.getState();
-    expect(s.log.some((l) => l.text.includes("desconhecido"))).toBe(true);
+    expect(s.log.some((l) => l.text.includes("unknown"))).toBe(true);
     expect(s.history).toHaveLength(0);
   });
 

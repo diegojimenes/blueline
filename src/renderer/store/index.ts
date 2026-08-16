@@ -517,7 +517,7 @@ export const useStore = create<AppState>()((set, get) => {
       apply(result, trimmed);
       return result;
     }
-    const result = runCommand(s.graph, s, trimmed, { config: s.config });
+    const result = runCommand(s.graph, s, trimmed, { config: s.config, gitDirty: s.gitDirty });
     apply(result, trimmed);
     return result;
   },

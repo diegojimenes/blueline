@@ -84,6 +84,28 @@ const en: Record<string, string> = {
   inspector_no_modified: "No code nodes modified at this time.",
   inspector_project_modules: "📦 Project Modules",
 
+  // Inspector — impact view (A)
+  inspector_impact_view: "🎯 Impact View",
+  inspector_impact_level: "IMPACT",
+  inspector_impact_low: "LOW",
+  inspector_impact_medium: "MEDIUM",
+  inspector_impact_high: "HIGH",
+  inspector_impact_callers_section: "Called by",
+  inspector_impact_affected_modules: "Affected modules:",
+  inspector_impact_transitive: "Transitive depth:",
+  inspector_impact_none: "No callers — leaf symbol",
+
+  // Inspector — copy context (E)
+  inspector_copy_context: "📋 Copy Context for Agent",
+  inspector_copy_context_copied: "✓ Copied!",
+  inspector_copy_context_title: "Copy this symbol's context to clipboard for use in your AI agent prompt",
+
+  // Dashboard metrics (F)
+  dashboard_metrics_title: "📊 Change Metrics",
+  dashboard_affected_modules: "Affected modules",
+  dashboard_symbols_changed: "Symbols changed",
+  dashboard_files_changed: "Files changed",
+
   // Inspector — stat cards
   stat_modules: "Modules",
   stat_classes: "Classes",
@@ -212,6 +234,28 @@ const pt: Record<string, string> = {
   inspector_non_structural: "{{count}} arquivos não-estruturais modificados.",
   inspector_no_modified: "Nenhum nó de código modificado no momento.",
   inspector_project_modules: "📦 Módulos do Projeto",
+
+  // Inspector — impact view (A)
+  inspector_impact_view: "🎯 Visão de Impacto",
+  inspector_impact_level: "IMPACTO",
+  inspector_impact_low: "BAIXO",
+  inspector_impact_medium: "MÉDIO",
+  inspector_impact_high: "ALTO",
+  inspector_impact_callers_section: "Chamado por",
+  inspector_impact_affected_modules: "Módulos afetados:",
+  inspector_impact_transitive: "Profundidade transitiva:",
+  inspector_impact_none: "Sem chamadores — símbolo folha",
+
+  // Inspector — copy context (E)
+  inspector_copy_context: "📋 Copiar Contexto para Agente",
+  inspector_copy_context_copied: "✓ Copiado!",
+  inspector_copy_context_title: "Copia o contexto deste símbolo para o clipboard para usar no prompt do seu agente",
+
+  // Dashboard metrics (F)
+  dashboard_metrics_title: "📊 Métricas de Mudança",
+  dashboard_affected_modules: "Módulos afetados",
+  dashboard_symbols_changed: "Símbolos modificados",
+  dashboard_files_changed: "Arquivos modificados",
 
   // Inspector — stat cards
   stat_modules: "Módulos",
