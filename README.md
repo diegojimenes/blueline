@@ -2,6 +2,8 @@
 
 # 🗺️ BlueLine
 
+<img src="docs/images/logo.png" width="128" height="128" alt="BlueLine Logo" style="border-radius: 20px" />
+
 **See what your AI coding agent is actually changing.**
 
 [![Tauri](https://img.shields.io/badge/Tauri-v2.0-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app/)
@@ -84,7 +86,10 @@ Instead of infinite scroll that just rescales boxes, BlueLine switches the **sem
 
 ### 👓 2. Architectural Views (Without Losing Spatial Position)
 
-![BlueLine Domain Lenses](docs/blueline-domains.png)
+<div align="center">
+  <img src="docs/images/blueline-domains.png" alt="Domain Lenses" width="49%" />
+  <img src="docs/images/blueline-layers.png" alt="Layer Lenses" width="49%" />
+</div>
 
 Views recolor and regroup the graph **without moving nodes**, preserving your spatial memory:
 - 🏢 **Layers**: Visualizes `domain`, `infra`, `ui`, `application`, `shared`, `entrypoint`.
