@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-v5.8-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-2021_Edition-DEA584?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Vitest](https://img.shields.io/badge/Vitest-178_tests_passed-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![License: Free to Use](https://img.shields.io/badge/License-Free_to_Use-yellow.svg?style=flat-square)](LICENSE)
 
 <br />
 
@@ -346,44 +346,7 @@ pnpm typecheck
 pnpm lint
 ```
 
-**Current Test Status:**
-- ✅ **178 Vitest tests** passing (100% green)
-- ✅ **8 Cargo (Rust) tests** passing (100% green)
-- ✅ TypeScript typecheck (`tsc --noEmit`) and ESLint 100% error-free
-
----
-
-## 🏆 Implemented Milestones (M0–M13)
-
-- [x] **M0 — Foundation**: Tauri 2 + React 19 + strict TypeScript + Vitest + CI.
-- [x] **M1 — Parse & Model**: Incremental Tree-Sitter WASM parser, graph normalization, and canonical serialization.
-- [x] **M2 — Graph & Semantic Zoom**: Deterministic layout by levels, canvas with culling, portal navigation, and history.
-- [x] **M3 — IDE Layout & Views**: Explorer, Inspector, and Canvas panels with Layers, Domain, and Coupling views.
-- [x] **M4 — Real Terminal**: xterm.js integration with Rust PTY (`portable-pty`) and command interception.
-- [x] **M5 — Live Updates**: `notify` watcher with debounce, incremental re-parse, diff, and visual pulse.
-- [x] **M5.1 — Refined UX & Levels 4/5**: Method inspection, nested/local functions, clean edges, and Git integration.
-- [x] **M6 — Session Persistence**: Saves and restores trails, focus, and history with consistency validation on disk.
-- [x] **M7 — Global Fuzzy Search**: QuickSearch modal with `Ctrl+P`/`Cmd+P`/`/` shortcuts and O(1) filter.
-- [x] **M8 & M9 — Diff & Snapshots**: Unified visual diff in Inspector and `computeGraphDiff` for structural audit.
-- [x] **M10 — Agent Protocol**: Passive context extraction of symbols/calls for prompts and visual attention notification.
-- [x] **M11 — Multi-Language Extensibility**: Python repository support (`.py`/`.pyi`) via `CompositeParser`.
-- [x] **M12 — Performance & Cache**: Spatial Grid Hash for 60 FPS culling and `GraphCacheStorage` for large repos.
-- [x] **M13 — Query Graph & Multi-Project**: Structured query engine (`query kind:class layer:domain`) and workspace support.
-
----
-
-## 🗺️ Roadmap (M14+)
-
-Planned for upcoming versions, prioritized by architectural impact:
-
-- [ ] **M14 — Impact View**: Given a modified symbol, show its full blast radius — direct dependencies, dependents (callers), affected modules, and propagation depth. Cascade highlight in the canvas.
-- [ ] **M15 — Change Summary**: Deterministic structural summary from `GraphDiff`: symbols added/modified/removed, dependencies added/removed, affected modules, impact level (LOW/MEDIUM/HIGH). With `[ Copy Context for Agent ]` button.
-- [ ] **M16 — Extended Query Commands**: `impact <symbol>`, `deps <symbol>`, `dependents <symbol>`, `changed --since HEAD`, `trace <symbol.method>`.
-- [ ] **M17 — Saved Views**: Persist named filter/view states for fast switching between investigation contexts.
-- [ ] **M18 — Architectural Reports**: SVG diagram export and Markdown architectural summaries for PR and ADR documentation.
-
----
 
 ## 📄 License
 
-Distributed under the **MIT** License. See `LICENSE` for more information.
+Distributed under a Free to Use License with Citation. See `LICENSE` for more information.
