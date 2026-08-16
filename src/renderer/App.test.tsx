@@ -9,7 +9,14 @@ describe("App (layout M0)", () => {
     useStore.setState({ projectOpen: false, focus: null, level: 1, lens: "layers" });
   });
 
-  it("renderiza os quatro painéis + status bar", () => {
+  it("renderiza a tela de onboarding quando nenhum projeto está aberto", () => {
+    render(<App />);
+    expect(screen.getByText("Welcome to BlueLine")).toBeInTheDocument();
+    expect(screen.getByLabelText("Terminal")).toBeInTheDocument();
+  });
+
+  it("renderiza os quatro painéis + status bar quando um projeto está aberto", () => {
+    useStore.setState({ projectOpen: true });
     render(<App />);
     expect(screen.getByLabelText("Explorer")).toBeInTheDocument();
     expect(screen.getByLabelText("Canvas")).toBeInTheDocument();
