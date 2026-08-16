@@ -166,7 +166,7 @@ export function Canvas() {
     }
 
     const nodes = visibleNodes(s.graph, { level: s.level, focus: s.focus }, s.config);
-    if (s.level === 1) {
+    if (s.level === 1 && s.lens === "layers") {
       drawLensGroups(ctx, groupsFor(nodes, s.lens, s.config), positions, visible);
     }
 
