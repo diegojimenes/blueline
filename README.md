@@ -19,9 +19,7 @@
 [Architecture](#-architecture) •
 [Commands & Shortcuts](#-commands--shortcuts) •
 [Configuration](#-configuration-bluelinejson) •
-[Installation](#-installation--usage) •
-[Milestones M0–M13](#-implemented-milestones-m0m13) •
-[Roadmap M14+](#-roadmap-m14)
+[Installation](#-installation--usage)
 
 </div>
 
